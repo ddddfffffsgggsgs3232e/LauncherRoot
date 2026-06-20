@@ -29,7 +29,8 @@ Not: macOS'ta "Doğrulanmamış geliştirici" uyarısı alırsanız: Ayarlar > G
 2. Bir tema seçin (mod paketi otomatik indirilir)
 3. "Oyna" butonuna basın
 4. Launcher, Fabric + Minecraft + asset'leri indirir ve oyunu başlatır
-Build (Geliştiriciler İçin)
+
+# Build (Geliştiriciler İçin)
 git clone https://github.com/ddddfffffsgggsgs3232e//LauncherRoot
 cd LauncherRoot
 dotnet run
