@@ -93,7 +93,3 @@ dotnet publish -c Release --self-contained true -r osx-arm64 -p:PublishSingleFil
   - **Linux:** `sudo apt install openjdk-21-jdk`
   - **Windows:** [Oracle JDK 21](https://www.oracle.com/java/technologies/downloads/)
 - **.NET Runtime:** Gerekmez — self-contained derlenmiştir
-
-## 📄 Lisans
-
-MIT — dilediğiniz gibi kullanın, değiştirin, dağıtın.
