@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LauncherRoot.Views.SettingsView">
+  <Grid RowDefinitions="Auto,*">
+    <!-- Back button -->
+    <Button Command="{Binding BackCommand}"
+            Margin="12,12"
+            Width="130"
+            Height="36"
+            FontSize="15">
+      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+        <TextBlock Text="←" FontSize="16" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Localization[menu.back]}" VerticalAlignment="Center" />
+      </StackPanel>
+    </Button>
+
+    <!-- Content -->
+    <ScrollViewer Grid.Row="1" Margin="40,0,40,20">
+      <StackPanel Spacing="24" HorizontalAlignment="Center" Width="520">
+        <TextBlock Text="{Binding Localization[settings.title]}"
+                   FontSize="32"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Margin="0,20,0,0" />
+
+        <!-- RAM Slider -->
+        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="💾" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock FontSize="16" FontWeight="Bold" VerticalAlignment="Center">
+                <Run Text="{Binding Localization[settings.ram]}" />
+                <Run Text="{Binding RamGB, StringFormat=': {0} GB'}" />
+              </TextBlock>
+            </StackPanel>
+            <Slider Minimum="1"
+                    Maximum="16"
+                    TickFrequency="1"
+                    Value="{Binding RamGB}"
+                    IsSnapToTickEnabled="True" />
+            <Grid ColumnDefinitions="*,*">
+              <TextBlock Text="1 GB" FontSize="11" />
+              <TextBlock Text="16 GB" Grid.Column="1"
+                         FontSize="11"
+                         HorizontalAlignment="Right" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- FPS Limit -->
+        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🖥️" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.fps]}" FontSize="16" FontWeight="Bold" />
+            </StackPanel>
+            <ComboBox ItemsSource="{Binding FpsOptions}"
+                      SelectedIndex="{Binding SelectedFpsIndex}"
+                      Height="40"
+                      Width="200"
+                      HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+
+        <!-- Tema seçimi -->
+        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🎨" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.theme]}" FontSize="16" FontWeight="Bold" />
+            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <TextBlock Text="{Binding Localization[settings.theme.light]}" FontSize="14" VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1"
+                            IsChecked="{Binding IsDarkTheme}"
+                            Margin="8,0" />
+              <TextBlock Text="{Binding Localization[settings.theme.dark]}" FontSize="14"
+                         Grid.Column="2"
+                         VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Dil seçimi -->
+        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🌐" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.language]}" FontSize="16" FontWeight="Bold" />
+            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <TextBlock Text="EN" FontSize="14" VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1"
+                            IsChecked="{Binding IsTurkish}"
+                            Margin="8,0" />
+              <TextBlock Text="TR" FontSize="14"
+                         Grid.Column="2"
+                         VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Reset button -->
+        <Button Command="{Binding ResetLauncherCommand}"
+                Background="#c0392b"
+                Foreground="White"
+                Height="48"
+                FontSize="16"
+                Margin="0,12,0,0"
+                CornerRadius="8">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <TextBlock Text="🗑️" FontSize="18" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Localization[settings.reset]}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

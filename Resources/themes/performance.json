@@ -1,0 +1,20 @@
+{
+  "id": "performance",
+  "name": "Performans Modları",
+  "nameEn": "Performance Mods",
+  "description": "Sodium, Lithium, Phosphor, FerriteCore ile oyununuzu hızlandırın",
+  "descriptionEn": "Boost your game with Sodium, Lithium, Phosphor and FerriteCore",
+  "icon": "⚡",
+  "mods": [
+    { "slug": "sodium", "name": "Sodium" },
+    { "slug": "lithium", "name": "Lithium" },
+    { "slug": "phosphor", "name": "Phosphor" },
+    { "slug": "ferrite-core", "name": "FerriteCore" },
+    { "slug": "krypton", "name": "Krypton" },
+    { "slug": "smoothboot-fabric", "name": "Smooth Boot" },
+    { "slug": "lazy-dfu", "name": "Lazy DFU" },
+    { "slug": "entityculling", "name": "Entity Culling" },
+    { "slug": "immediatelyfast", "name": "ImmediatelyFast" },
+    { "slug": "modernfix", "name": "ModernFix" }
+  ]
+}

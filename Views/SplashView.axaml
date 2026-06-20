@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LauncherRoot.Views.SplashView">
+  <Grid HorizontalAlignment="Center"
+        VerticalAlignment="Center">
+    <Border CornerRadius="16"
+            Padding="40">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <TextBlock Text="🎮"
+                   FontSize="48"
+                   HorizontalAlignment="Center"
+                   Opacity="0.5" />
+        <TextBlock Text="LauncherRoot"
+                   FontSize="36"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="Let it happen..."
+                   FontSize="20"
+                   FontStyle="Italic"
+                   HorizontalAlignment="Center"
+                   Opacity="{Binding Opacity}" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

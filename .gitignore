@@ -1,0 +1,10 @@
+bin/
+obj/
+publish*/
+publish/
+*.pdb
+*.user
+*.suo
+.vs/
+.DS_Store
+Thumbs.db

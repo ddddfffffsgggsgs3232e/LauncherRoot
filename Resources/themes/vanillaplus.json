@@ -1,0 +1,20 @@
+{
+  "id": "vanillaplus",
+  "name": "Vanilla+",
+  "nameEn": "Vanilla+",
+  "description": "Vanilla hissini koruyan Quality of Life iyileştirmeleri",
+  "descriptionEn": "Quality of Life improvements that preserve the vanilla feel",
+  "icon": "🌟",
+  "mods": [
+    { "slug": "appleskin", "name": "AppleSkin" },
+    { "slug": "jade", "name": "Jade" },
+    { "slug": "minihud", "name": "MiniHUD" },
+    { "slug": "litematica", "name": "Litematica" },
+    { "slug": "xaeros-minimap", "name": "Xaero's Minimap" },
+    { "slug": "xaeros-world-map", "name": "Xaero's World Map" },
+    { "slug": "inventory-profiles-next", "name": "Inventory Profiles Next" },
+    { "slug": "mouse-tweaks", "name": "Mouse Tweaks" },
+    { "slug": "roughly-enough-items", "name": "Roughly Enough Items" },
+    { "slug": "modmenu", "name": "Mod Menu" }
+  ]
+}

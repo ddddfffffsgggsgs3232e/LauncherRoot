@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:LauncherRoot.ViewModels"
+             xmlns:models="clr-namespace:LauncherRoot.Models"
+             x:Class="LauncherRoot.Views.ThemeSelectionView">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="40">
+    <!-- Title -->
+    <TextBlock Text="{Binding Localization[theme.title]}"
+               FontSize="32"
+               FontWeight="Bold"
+               HorizontalAlignment="Center"
+               Grid.Row="0"
+               Margin="0,20,0,0" />
+
+    <!-- Subtitle -->
+    <TextBlock Text="{Binding Localization[theme.select]}"
+               FontSize="16"
+               HorizontalAlignment="Center"
+               Grid.Row="1"
+               Margin="0,10,0,20" />
+
+    <!-- Theme cards -->
+    <ItemsControl ItemsSource="{Binding Themes}"
+                  Grid.Row="2"
+                  HorizontalAlignment="Center">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <WrapPanel HorizontalAlignment="Center" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate DataType="{x:Type models:Theme}">
+          <Button Background="#2D2D2D"
+                  CornerRadius="12"
+                  Width="200"
+                  Height="240"
+                  Padding="16"
+                  Margin="8"
+                  Cursor="Hand"
+                  Command="{Binding DataContext.SelectThemeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                  CommandParameter="{Binding}"
+                  Classes="ThemeCard">
+            <StackPanel Spacing="8"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+              <TextBlock Text="{Binding Icon}"
+                         FontSize="40"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding LocalizedName}"
+                         FontSize="18"
+                         FontWeight="Bold"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap" />
+              <TextBlock Text="{Binding LocalizedDescription}"
+                         FontSize="12"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="160"
+                         Opacity="0.8" />
+              <TextBlock Text="{Binding Mods.Count, StringFormat='{}{0} 📦'}"
+                         FontSize="12"
+                         HorizontalAlignment="Center"
+                         Opacity="0.6" />
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Download progress -->
+    <Border Background="#2D2D2D"
+            CornerRadius="8"
+            Padding="20"
+            Grid.Row="3"
+            VerticalAlignment="Bottom"
+            IsVisible="{Binding IsDownloading}"
+            Margin="0,20">
+      <StackPanel Spacing="10">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+          <TextBlock Text="⏳" FontSize="18" />
+          <TextBlock Text="{Binding Localization[theme.downloading]}"
+                     FontSize="16" />
+        </StackPanel>
+        <ProgressBar Value="{Binding DownloadProgress}"
+                     Height="20"
+                     Minimum="0"
+                     Maximum="1" />
+        <TextBlock Text="{Binding ProgressText}"
+                   FontSize="14"
+                   HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>
