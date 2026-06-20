@@ -13,14 +13,14 @@ Görseller
 Main Menu
 <img width="1349" height="715" alt="resim" src="https://github.com/user-attachments/assets/64867a04-5652-467d-8b4e-fa7c7d032f5c" />
 
-Kurulum
+# Kurulum
 Hiçbir şey kurmanıza gerek yok. Çalıştırılabilir tek dosya olarak derlenmiştir:
-Linux (x64)
+# Linux (x64)
 chmod +x LauncherRoot
 ./LauncherRoot
-Windows (x64)
+# Windows (x64)
 LauncherRoot.exe dosyasına çift tıklayın.
-macOS (Intel / Apple Silicon)
+# macOS (Intel / Apple Silicon)
 chmod +x LauncherRoot
 ./LauncherRoot
 Not: macOS'ta "Doğrulanmamış geliştirici" uyarısı alırsanız: Ayarlar > Gizlilik ve Güvenlik > Yine de Aç seçeneğini kullanın.
@@ -33,6 +33,7 @@ Build (Geliştiriciler İçin)
 git clone https://github.com/ddddfffffsgggsgs3232e//LauncherRoot
 cd LauncherRoot
 dotnet run
+
 Derleme
 # Linux
 dotnet publish -c Release --self-contained true -r linux-x64 -p:PublishSingleFile=true -o publish-linux
@@ -48,5 +49,5 @@ dotnet publish -c Release --self-contained true -r osx-arm64 -p:PublishSingleFil
 Gereksinimler
 - JDK 21 (Minecraft için). Linux: sudo apt install openjdk-21-jdk / Windows: Oracle JDK 21 (https://www.oracle.com/java/technologies/downloads/)
 - Yoksa .NET Runtime gerekmez — self-contained derlenmiştir.
-Lisans
+# Lisans
 MIT — dilediğiniz gibi kullanın, değiştirin, dağıtın.
