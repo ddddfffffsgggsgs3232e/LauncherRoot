@@ -11,6 +11,8 @@ Minecraft 1.21.4 için Fabric tabanlı, tek tıkla çalışan bir launcher. Modr
 - Açık/Koyu tema + Türkçe/İngilizce dil desteği
 Görseller
 Main Menu
+<img width="1349" height="715" alt="resim" src="https://github.com/user-attachments/assets/64867a04-5652-467d-8b4e-fa7c7d032f5c" />
+
 Kurulum
 Hiçbir şey kurmanıza gerek yok. Çalıştırılabilir tek dosya olarak derlenmiştir:
 Linux (x64)
@@ -28,7 +30,7 @@ Not: macOS'ta "Doğrulanmamış geliştirici" uyarısı alırsanız: Ayarlar > G
 3. "Oyna" butonuna basın
 4. Launcher, Fabric + Minecraft + asset'leri indirir ve oyunu başlatır
 Build (Geliştiriciler İçin)
-git clone https://github.com/kullanici/LauncherRoot
+git clone https://github.com/ddddfffffsgggsgs3232e//LauncherRoot
 cd LauncherRoot
 dotnet run
 Derleme
