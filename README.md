@@ -86,6 +86,8 @@ dotnet publish -c Release --self-contained true -r osx-x64 -p:PublishSingleFile=
 ```bash
 dotnet publish -c Release --self-contained true -r osx-arm64 -p:PublishSingleFile=true -o publish-mac-arm
 ```
+#### LİSANS
+Proje GPL-V3 ile lisanslanmıştır.
 
 ## 📦 Gereksinimler
 
