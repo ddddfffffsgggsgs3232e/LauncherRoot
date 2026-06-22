@@ -1,82 +1,277 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:LauncherRoot.ViewModels"
+             xmlns:models="clr-namespace:LauncherRoot.Models"
              x:Class="LauncherRoot.Views.MainMenuView">
-  <Grid RowDefinitions="Auto,*,Auto,Auto">
-    <!-- Top bar: Settings gear -->
-    <Grid ColumnDefinitions="Auto,*,Auto" Grid.Row="0" Margin="16,12">
-      <Button Command="{Binding OpenSettingsCommand}"
-              FontSize="28"
-              Width="48"
-              Height="48"
-              BorderThickness="0"
-              Background="Transparent"
-              Cursor="Hand">
-        <TextBlock Text="⚙" />
-      </Button>
-    </Grid>
+  <Grid ColumnDefinitions="220,*" RowDefinitions="*,Auto">
+    <!-- LEFT SIDEBAR -->
+    <Border Grid.Column="0" Grid.RowSpan="2"
+            Background="{DynamicResource BgSidebarBrush}"
+            BorderThickness="0,0,1,0"
+            BorderBrush="{DynamicResource BorderBrush}">
+      <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+        <!-- Sidebar header -->
+        <Border Grid.Row="0" Padding="16,20,16,12">
+          <StackPanel Spacing="4">
+            <TextBlock Text="📂" FontSize="20" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding Localization[menu.instances]}"
+                       FontSize="15" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <Border Height="1" Background="{DynamicResource BorderBrush}"
+                    Margin="20,8,20,0" />
+          </StackPanel>
+        </Border>
 
-    <!-- Center: Logo -->
-    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
-      <TextBlock Text="🎮"
-                 FontSize="36"
-                 HorizontalAlignment="Center"
-                 Opacity="0.5" />
-      <TextBlock Text="LauncherRoot"
-                 FontSize="52"
-                 FontWeight="Bold"
-                 HorizontalAlignment="Center" />
-      <TextBlock Text="{Binding PlayerUsername, FallbackValue=''}"
-                 FontSize="18"
-                 HorizontalAlignment="Center"
-                 Opacity="0.7" />
-    </StackPanel>
+        <!-- Add Instance button (above list so it's always visible) -->
+        <Border Grid.Row="1" Padding="12,0,12,6">
+          <Button Command="{Binding AddInstanceCommand}"
+                  Classes="secondary"
+                  Height="38"
+                  HorizontalAlignment="Stretch">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <TextBlock Text="+" FontSize="16" FontWeight="Bold" />
+              <TextBlock Text="{Binding Localization[menu.newinstance]}" FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Border>
 
-    <!-- Status bar -->
-    <Border Grid.Row="2"
-            Background="#2D2D2D"
-            CornerRadius="8"
-            Padding="16,10"
-            Margin="40,0,40,12"
-            IsVisible="{Binding ShowStatusBar}">
-      <StackPanel Spacing="8">
-        <TextBlock Text="{Binding StatusText}"
-                   FontSize="13"
-                   HorizontalAlignment="Center" />
-        <ProgressBar Value="{Binding StatusProgress}"
-                     Height="6"
-                     Minimum="0"
-                     Maximum="1" />
-      </StackPanel>
+        <!-- Instance list -->
+        <ScrollViewer Grid.Row="2" Margin="10,0">
+          <ItemsControl ItemsSource="{Binding InstanceList}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type models:Instance}">
+                <Grid Margin="0,2" Classes="instanceRow">
+                  <Button Classes="instanceBtn"
+                          Command="{Binding DataContext.SelectInstanceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                          CommandParameter="{Binding}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2">
+                      <Border Width="30" Height="30" CornerRadius="6"
+                              Background="{DynamicResource BgCardBrush}"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Icon}"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding DisplayName}"
+                                    FontSize="12" FontWeight="SemiBold"
+                                    Foreground="{DynamicResource TextPrimaryBrush}"
+                                    TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding LoaderLabel}"
+                                    FontSize="10"
+                                    Foreground="{DynamicResource TextMutedBrush}"
+                                    TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Separator -->
+        <Border Grid.Row="3" Height="1" Background="{DynamicResource BorderBrush}"
+                Margin="14,4,14,4"
+                IsVisible="{Binding HasInstances}" />
+
+        <!-- Instance action buttons -->
+        <StackPanel Grid.Row="4" Margin="10,2,10,12" Spacing="2"
+                    IsVisible="{Binding HasInstances}">
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding EditInstanceCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="✏️" FontSize="12" Width="18" />
+              <TextBlock Text="{Binding Localization[instance.edit]}" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding DeleteInstanceCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🗑️" FontSize="12" Width="18" />
+              <TextBlock Text="{Binding Localization[instance.delete]}" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenLogsFolderCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📋" FontSize="12" Width="18" />
+              <TextBlock Text="Log klasörü" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenInstanceFolderCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📂" FontSize="12" Width="18" />
+              <TextBlock Text="Oyun klasörünü aç" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenScreenshotsFolderCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📸" FontSize="12" Width="18" />
+              <TextBlock Text="Ekran görüntüleri" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenLogViewerCommand}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📟" FontSize="12" Width="18" />
+              <TextBlock Text="Konsol" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding DuplicateInstanceCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📋" FontSize="12" Width="18" />
+              <TextBlock Text="Çoğalt" FontSize="12" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
     </Border>
 
-    <!-- Bottom buttons -->
-    <Grid Grid.Row="3"
-          ColumnDefinitions="*,Auto,Auto,*"
-          Margin="0,0,0,40">
-      <Button Command="{Binding OpenModManagementCommand}"
-              Grid.Column="1"
-              Width="190"
-              Height="55"
-              FontSize="17"
-              Margin="0,0,12,0">
-        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <TextBlock Text="📦" FontSize="20" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Localization[menu.modmanagement]}" VerticalAlignment="Center" />
-        </StackPanel>
-      </Button>
+    <!-- MAIN CONTENT -->
+    <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto"
+          Background="{Binding BackgroundBrush}">
+      <!-- Top bar -->
+      <Grid Grid.Row="0" Margin="20,16,20,0">
+        <!-- User greeting -->
+        <Button Command="{Binding OpenPlayerSetupCommand}"
+                Classes="ghost"
+                Padding="8"
+                HorizontalAlignment="Left"
+                Cursor="Hand">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Border Width="36" Height="36" CornerRadius="18"
+                    Background="{DynamicResource AccentBrush}">
+              <TextBlock Text="{Binding PlayerInitial, FallbackValue='?'}" FontSize="16" FontWeight="Bold"
+                         Foreground="White"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center" />
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding PlayerUsername, FallbackValue='Oyuncu'}"
+                          FontSize="15" FontWeight="SemiBold"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
+                          TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="Hoş geldin!"
+                         FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+          </StackPanel>
+        </Button>
 
-      <Button Command="{Binding PlayCommand}"
-              Grid.Column="2"
-              Width="210"
-              Height="65"
-              FontSize="22"
-              FontWeight="Bold">
-        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-          <TextBlock Text="▶" FontSize="24" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Localization[menu.play]}" VerticalAlignment="Center" />
-        </StackPanel>
-      </Button>
+        <!-- Settings button -->
+        <Button Command="{Binding OpenSettingsCommand}"
+                Classes="ghost"
+                HorizontalAlignment="Right"
+                Width="40" Height="40"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center">
+          <TextBlock Text="⚙" FontSize="20" />
+        </Button>
+      </Grid>
+
+      <!-- Center content -->
+      <StackPanel Grid.Row="1"
+                  VerticalAlignment="Center" HorizontalAlignment="Center"
+                  Spacing="16">
+        <TextBlock Text="🎮"
+                   FontSize="48"
+                   HorizontalAlignment="Center"
+                   Opacity="0.4" />
+        <TextBlock Text="LauncherRoot"
+                   Classes="h1"
+                   HorizontalAlignment="Center" />
+
+        <!-- Selected instance badge -->
+        <Border Classes="card"
+                Padding="24,16"
+                IsVisible="{Binding HasInstances}">
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Localization[instance.selected]}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding SelectedInstance.DisplayName, FallbackValue='-'}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBrush}"
+                       HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding SelectedInstance.Version, FallbackValue=''}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- No instance message -->
+        <Border Background="{DynamicResource BgCardBrush}"
+                CornerRadius="12" Padding="24,16"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                IsVisible="{Binding HasInstances, Converter={StaticResource InverseBool}}">
+          <TextBlock Text="Henüz bir instance yok. Yeni bir instance oluştur!"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     HorizontalAlignment="Center" />
+        </Border>
+      </StackPanel>
+
+      <!-- Bottom action buttons -->
+      <Grid Grid.Row="2"
+            ColumnDefinitions="*,Auto,Auto,*"
+            Margin="0,0,0,32">
+        <Button Command="{Binding PlayCommand}"
+                Grid.Column="1"
+                Classes="primary"
+                Width="220" Height="56"
+                FontSize="20"
+                FontWeight="Bold">
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <TextBlock Text="▶" FontSize="22" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Localization[menu.play]}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <Button Command="{Binding OpenModManagementCommand}"
+                Grid.Column="2"
+                Classes="secondary"
+                Width="180" Height="50"
+                FontSize="15"
+                Margin="12,0,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Localization[menu.modmanagement]}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Button>
+      </Grid>
     </Grid>
+
+    <!-- STATUS BAR -->
+    <Border Grid.ColumnSpan="2" Grid.Row="1"
+            Background="{DynamicResource BgCardBrush}"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource BorderBrush}"
+            Padding="16,10"
+            IsVisible="{Binding ShowStatusBar}">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{Binding StatusText}"
+                   FontSize="13"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center" />
+        <ProgressBar Value="{Binding StatusProgress}"
+                     Minimum="0" Maximum="1" />
+      </StackPanel>
+    </Border>
   </Grid>
 </UserControl>

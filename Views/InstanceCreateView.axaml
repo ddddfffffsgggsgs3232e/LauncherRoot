@@ -1,0 +1,182 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:LauncherRoot.ViewModels"
+             xmlns:views="clr-namespace:LauncherRoot.Views"
+             x:Class="LauncherRoot.Views.InstanceCreateView">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="60,30">
+    <!-- Title -->
+    <StackPanel Grid.Row="0" HorizontalAlignment="Center" Spacing="8" Margin="0,10,0,24">
+      <TextBlock Text="🆕"
+                 FontSize="36"
+                 HorizontalAlignment="Center"
+                 Opacity="0.6"
+                 IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
+      <TextBlock Text="✏️"
+                 FontSize="36"
+                 HorizontalAlignment="Center"
+                 Opacity="0.6"
+                 IsVisible="{Binding IsEditing}" />
+      <TextBlock Text="{Binding Localization[menu.newinstance]}"
+                 IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}"
+                 Classes="h1"
+                 HorizontalAlignment="Center" />
+      <TextBlock Text="{Binding Localization[instance.edit]}"
+                 IsVisible="{Binding IsEditing}"
+                 Classes="h1"
+                 HorizontalAlignment="Center" />
+      <TextBlock Text="Minecraft sürümü ve yükleyici seçin"
+                 Classes="body"
+                 HorizontalAlignment="Center"
+                 IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
+      <TextBlock Text="Profil ayarlarını değiştirin"
+                 Classes="body"
+                 HorizontalAlignment="Center"
+                 IsVisible="{Binding IsEditing}" />
+    </StackPanel>
+
+    <!-- Content -->
+    <ScrollViewer Grid.Row="1" HorizontalAlignment="Center">
+      <StackPanel Spacing="20" Width="480">
+        <!-- Loading -->
+        <TextBlock Text="Sürümler yükleniyor..."
+                   IsVisible="{Binding IsLoading}"
+                   HorizontalAlignment="Center"
+                   Classes="body" />
+
+        <!-- Version Selection -->
+        <Border Classes="card" Padding="20"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="Minecraft Sürümü" Classes="h3" VerticalAlignment="Center" />
+            </StackPanel>
+            <ComboBox ItemsSource="{Binding AvailableVersions}"
+                      SelectedItem="{Binding SelectedVersion}"
+                      Height="38"
+                      Width="320"
+                      HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+
+        <!-- Loader Selection -->
+        <Border Classes="card" Padding="20"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}">
+          <StackPanel Spacing="14">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="⚙️" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="Yükleyici (Loader)" Classes="h3" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+              <Button Command="{Binding SelectLoaderCommand}"
+                      CommandParameter="vanilla"
+                      Width="72" Height="72"
+                      CornerRadius="14"
+                      Background="{Binding IsVanilla, Converter={StaticResource BoolToBrush}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                  <TextBlock Text="🟩" FontSize="22" HorizontalAlignment="Center" />
+                  <TextBlock Text="Vanilla" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding SelectLoaderCommand}"
+                      CommandParameter="fabric"
+                      Width="72" Height="72"
+                      CornerRadius="14"
+                      Background="{Binding IsFabric, Converter={StaticResource BoolToBrush}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                  <TextBlock Text="🔧" FontSize="22" HorizontalAlignment="Center" />
+                  <TextBlock Text="Fabric" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding SelectLoaderCommand}"
+                      CommandParameter="forge"
+                      Width="72" Height="72"
+                      CornerRadius="14"
+                      Background="{Binding IsForge, Converter={StaticResource BoolToBrush}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                  <TextBlock Text="⚒️" FontSize="22" HorizontalAlignment="Center" />
+                  <TextBlock Text="Forge" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding SelectLoaderCommand}"
+                      CommandParameter="neoforge"
+                      Width="72" Height="72"
+                      CornerRadius="14"
+                      Background="{Binding IsNeoforge, Converter={StaticResource BoolToBrush}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                  <TextBlock Text="🔶" FontSize="22" HorizontalAlignment="Center" />
+                  <TextBlock Text="NeoForge" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding SelectLoaderCommand}"
+                      CommandParameter="quilt"
+                      Width="72" Height="72"
+                      CornerRadius="14"
+                      Background="{Binding IsQuilt, Converter={StaticResource BoolToBrush}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                  <TextBlock Text="🪡" FontSize="22" HorizontalAlignment="Center" />
+                  <TextBlock Text="Quilt" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Instance Name -->
+        <Border Classes="card" Padding="20"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding Localization[instance.name]}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBox Text="{Binding InstanceName}"
+                     Height="40" FontSize="15"
+                     Watermark="{Binding Localization[instance.name.placeholder]}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Error -->
+        <TextBlock Text="{Binding ErrorMessage}"
+                   Foreground="{DynamicResource ErrorBrush}"
+                   FontSize="13"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Bottom buttons -->
+    <Grid Grid.Row="2"
+          ColumnDefinitions="Auto,Auto,*"
+          Margin="0,20,0,10">
+      <Button Command="{Binding BackCommand}"
+              Classes="secondary"
+              Width="120" Height="42"
+              FontSize="14">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+          <TextBlock Text="←" FontSize="15" />
+          <TextBlock Text="Geri" />
+        </StackPanel>
+      </Button>
+      <Button Command="{Binding CreateCommand}"
+              Grid.Column="1"
+              Classes="primary"
+              Width="180" Height="46"
+              FontSize="16"
+              FontWeight="Bold"
+              Margin="12,0,0,0"
+              IsEnabled="{Binding IsCreating, Converter={StaticResource InverseBool}}">
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <TextBlock Text="+" FontSize="20" FontWeight="Bold" IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
+          <TextBlock Text="Oluştur" VerticalAlignment="Center" IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
+          <TextBlock Text="✓" FontSize="18" FontWeight="Bold" IsVisible="{Binding IsEditing}" />
+          <TextBlock Text="Kaydet" VerticalAlignment="Center" IsVisible="{Binding IsEditing}" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </Grid>
+</UserControl>

@@ -1,55 +1,98 @@
-# LauncherRoot
+# LauncherRoot — Sürüm Notları
 
-**LauncherRoot** — Minecraft Fabric Launcher (Açık Kaynak)
+## 🆕 Eklenen Özellikler
 
-Minecraft 1.21.4 için Fabric tabanlı, tek tıkla çalışan bir launcher. Modrinth üzerinden performans modları otomatik kurulur, tema seçimi ile farklı mod paketleri desteklenir.
+### 1. Konsol Penceresi (LogViewer)
+- Ayrı bir pencere olarak açılır (`Views/LogViewerWindow`)
+- `~/.LauncherRoot/logs/` dizinindeki en güncel `.log` dosyasını okur
+- Konsol tipi font (monospace) ile çıktıyı gösterir
+- "🔄 Yenile" butonu ile log içeriği tazelenebilir
+- MainMenu'de "📟 Konsol" butonu ile erişilir
 
-## 🎮 Özellikler
+### 2. Ekran Görüntüleri Klasörü
+- Instance'ın `minecraft/screenshots/` klasörüne tek tıkla erişim
+- Klasör yoksa otomatik oluşturulur
+- Sidebar'da "📸 Ekran görüntüleri" butonu
 
-- ⚙️ **Otomatik kurulum** — Fabric loader, Minecraft client, asset'ler ve tüm kütüphaneleri kendisi indirir
-- 📦 **Modrinth entegrasyonu** — Tek tıkla mod yükleme (Sodium, Lithium, FerriteCore, Krypton, vs.)
-- 🎨 **Tema sistemi** — Farklı mod paketleri arasından seçim yapın
-- 🛠️ **Mod yönetimi** — Mod arama, yükleme, etkinleştirme/devre dışı bırakma
-- 🔧 **RAM ayarı** — Minecraft'a ne kadar RAM verileceğini seçin
-- 🌙 **Açık/Koyu tema** + **Türkçe/İngilizce** dil desteği
+### 3. Instance İşlem Butonları Sidebar'a Taşındı
+- 7 buton sidebar'ın alt bölümünde sıralanır:
+  - ✏️ Düzenle — instance'ı düzenleme modunda açar
+  - 🗑️ Sil — instance'ı siler
+  - 📋 Log klasörü — instance'ın `logs/` klasörünü açar
+  - 📂 Oyun klasörünü aç — instance'ın oyun dizinini açar
+  - 📸 Ekran görüntüleri — `screenshots/` klasörünü açar
+  - 📟 Konsol — LogViewer penceresini açar
+  - 📋 Çoğalt — instance'ı kopyalar
+- Butonlar her zaman görünür (hover gerektirmez)
+- Instance seçilmediğinde gizlenir
 
-## 📸 Görseller
+### 4. Yeni Instance Butonu Üst Konum
+- "➕ Yeni" butonu instance listesinin üstüne alındı
+- Liste çok uzun olsa bile her zaman görünür
 
-### Main Menu
+### 5. Ayarlar Sayfası Yatay Düzen
+- 820px genişliğinde 2 kolonlu grid düzeni
+- RAM + FPS yan yana
+- Tema + Dil yan yana
+- Java Yolu + Çözünürlük yan yana
+- JVM Argümanları tam genişlik
+- Pre-launch + Wrapper yan yana
+- Post-exit tek başına
 
-<img width="1349" height="715" alt="resim" src="https://github.com/user-attachments/assets/64867a04-5652-467d-8b4e-fa7c7d032f5c" />
+### 6. Sıfırla Kartı (Ayarlar Sayfası En Üstte)
+- Kırmızı çerçeveli bağımsız kart
+- ⚠️ uyarı ikonu ve "Tüm ayarları, hesapları ve profilleri siler" açıklaması
+- Diğer ayarlardan ayrı konumlandırıldı
 
-## 🚀 Kurulum
+### 7. Sidebar Tasarımı Sadeleştirme
+- Badge'den tüm butonlar kaldırıldı, sadece seçili instance ismi + versiyon kaldı
+- "Seçili:" etiketi eklendi
+- "Hoş geldin!" mesajı kullanıcı adının altında gösterilir
 
-Hiçbir şey kurmanıza gerek yok. Çalıştırılabilir tek dosya olarak derlenmiştir.
+### 8. Masaüstü Ortamı Desteği
+- Instance butonları `UseShellExecute = true` ile açılır
+- Log klasörü, oyun klasörü, ekran görüntüleri işletim sisteminin varsayılan dosya yöneticisinde açılır
 
-### Linux (x64)
+### 9. Ayarlar Sayfası
 
-```bash
-chmod +x LauncherRoot
-./LauncherRoot
-```
+**RAM** (💾)
+- 1–16 GB arası slider
+- Anlık seçilen değer gösterilir ("4 GB")
 
-### Windows (x64)
+**FPS Limiti** (🖥️)
+- ComboBox ile hazır seçenekler (30, 60, 120, 144, unlimited)
 
-`LauncherRoot.exe` dosyasına çift tıklayın.
+**Tema** (🎨)
+- Light/Dark toggle
+- Anlık geçiş, DynamicResource altyapısı
 
-### macOS (Intel / Apple Silicon)
+**Dil** (🌐)
+- EN / TR toggle
+- Tüm arayüz anlık değişir
 
-```bash
-chmod +x LauncherRoot
-./LauncherRoot
-```
+**Java Yolu** (☕)
+- TextBox + "Gözat" butonu ile dosya seçici
+- Boş bırakılırsa auto-detect (`PATH`, `JAVA_HOME`, `/usr/lib/jvm`, JetBrains JBR taranır)
 
-**Not:** macOS'ta "Doğrulanmamış geliştirici" uyarısı alırsanız:
-> Ayarlar > Gizlilik ve Güvenlik > Yine de Aç seçeneğini kullanın.
+**Çözünürlük** (🖥️)
+- Genişlik × Yükseklik (px) girişi
+- Oyun başlatılırken `--width` / `--height` olarak kullanılır
 
-## 📋 İlk Kullanım
+**JVM Argümanları** (☕)
+- Varsayılan: `-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:MaxGCPauseMillis=50 -XX:+DisableExplicitGC`
+- Serbest metin girişi
 
-1. Uygulama açılınca kullanıcı adınızı girin
-2. Bir tema seçin (mod paketi otomatik indirilir)
-3. "Oyna" butonuna basın
-4. Launcher, Fabric + Minecraft + asset'leri indirir ve oyunu başlatır
+**Ön/Komut Ayarları**
+- 🚀 **Pre-launch** — Java başlatılmadan önce çalıştırılır
+- 📦 **Wrapper** — Java komutunu sarar (ör. `prismlauncher`)
+- 🔚 **Post-exit** — Oyun kapandıktan sonra çalıştırılır
+- Tümü başarısız olsa bile oyun başlatmayı engellemez
+- Instance'a özel değil, genel ayarlardır
+
+**🗑️ Sıfırla**
+- Tüm ayarları, hesapları ve profilleri siler
+- Kırmızı çerçeveli kart ile diğer ayarlardan ayrılmıştır
+- Sildikten sonra PlayerSetup sayfasına yönlendirir
 
 ## 🔨 Build (Geliştiriciler İçin)
 
@@ -86,6 +129,7 @@ dotnet publish -c Release --self-contained true -r osx-x64 -p:PublishSingleFile=
 ```bash
 dotnet publish -c Release --self-contained true -r osx-arm64 -p:PublishSingleFile=true -o publish-mac-arm
 ```
+
 #### LİSANS
 Proje GPL-V3 ile lisanslanmıştır.
 

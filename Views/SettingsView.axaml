@@ -2,117 +2,238 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="LauncherRoot.Views.SettingsView">
   <Grid RowDefinitions="Auto,*">
-    <!-- Back button -->
-    <Button Command="{Binding BackCommand}"
-            Margin="12,12"
-            Width="130"
-            Height="36"
-            FontSize="15">
-      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-        <TextBlock Text="←" FontSize="16" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Localization[menu.back]}" VerticalAlignment="Center" />
-      </StackPanel>
-    </Button>
+    <!-- Back button row -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="16,12">
+      <Button Command="{Binding BackCommand}"
+              Classes="ghost"
+              Width="110" Height="36"
+              FontSize="14">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+          <TextBlock Text="←" FontSize="16" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Localization[menu.back]}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </StackPanel>
 
     <!-- Content -->
     <ScrollViewer Grid.Row="1" Margin="40,0,40,20">
-      <StackPanel Spacing="24" HorizontalAlignment="Center" Width="520">
-        <TextBlock Text="{Binding Localization[settings.title]}"
-                   FontSize="32"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   Margin="0,20,0,0" />
+      <StackPanel Spacing="24" HorizontalAlignment="Center" Width="820">
+        <!-- Reset card (top, separate) -->
+        <Border Classes="card" Padding="20"
+                BorderBrush="#ff4444" BorderThickness="1">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Width="40" Height="40" CornerRadius="8"
+                    Background="#33ff4444" VerticalAlignment="Center">
+              <TextBlock Text="⚠️" FontSize="20"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Localization[settings.reset]}"
+                         FontSize="15" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="Tüm ayarları, hesapları ve profilleri siler"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="danger" Height="38" Width="100"
+                    Command="{Binding ResetLauncherCommand}"
+                    VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <TextBlock Text="🗑️" FontSize="13" />
+                <TextBlock Text="Sıfırla" FontSize="13" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Border>
 
-        <!-- RAM Slider -->
-        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
-          <StackPanel Spacing="10">
+      <Grid HorizontalAlignment="Center" Width="820"
+            ColumnDefinitions="400,20,400"
+            RowDefinitions="Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto">
+        <TextBlock Grid.ColumnSpan="3"
+                   Text="{Binding Localization[settings.title]}"
+                   Classes="h1"
+                   HorizontalAlignment="Center"
+                   Margin="0,10,0,0" />
+
+        <!-- ── Row 1: RAM + FPS ── -->
+        <Border Grid.Row="2" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="💾" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock FontSize="16" FontWeight="Bold" VerticalAlignment="Center">
+              <TextBlock FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center">
                 <Run Text="{Binding Localization[settings.ram]}" />
                 <Run Text="{Binding RamGB, StringFormat=': {0} GB'}" />
               </TextBlock>
             </StackPanel>
-            <Slider Minimum="1"
-                    Maximum="16"
-                    TickFrequency="1"
-                    Value="{Binding RamGB}"
-                    IsSnapToTickEnabled="True" />
+            <Slider Minimum="1" Maximum="16" TickFrequency="1"
+                    Value="{Binding RamGB}" IsSnapToTickEnabled="True" />
             <Grid ColumnDefinitions="*,*">
-              <TextBlock Text="1 GB" FontSize="11" />
-              <TextBlock Text="16 GB" Grid.Column="1"
-                         FontSize="11"
+              <TextBlock Text="1 GB" FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Text="16 GB" Grid.Column="1" FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Right" />
             </Grid>
           </StackPanel>
         </Border>
-
-        <!-- FPS Limit -->
-        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
-          <StackPanel Spacing="10">
+        <Border Grid.Row="2" Grid.Column="2" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="🖥️" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Localization[settings.fps]}" FontSize="16" FontWeight="Bold" />
+              <TextBlock Text="{Binding Localization[settings.fps]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
             <ComboBox ItemsSource="{Binding FpsOptions}"
                       SelectedIndex="{Binding SelectedFpsIndex}"
-                      Height="40"
-                      Width="200"
-                      HorizontalAlignment="Left" />
+                      Height="38" Width="200" HorizontalAlignment="Left" />
           </StackPanel>
         </Border>
 
-        <!-- Tema seçimi -->
-        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
-          <StackPanel Spacing="10">
+        <!-- ── Row 2: Theme + Language ── -->
+        <Border Grid.Row="4" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="🎨" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Localization[settings.theme]}" FontSize="16" FontWeight="Bold" />
+              <TextBlock Text="{Binding Localization[settings.theme]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
             <Grid ColumnDefinitions="*,Auto,Auto">
-              <TextBlock Text="{Binding Localization[settings.theme.light]}" FontSize="14" VerticalAlignment="Center" />
-              <ToggleSwitch Grid.Column="1"
-                            IsChecked="{Binding IsDarkTheme}"
-                            Margin="8,0" />
-              <TextBlock Text="{Binding Localization[settings.theme.dark]}" FontSize="14"
-                         Grid.Column="2"
+              <TextBlock Text="{Binding Localization[settings.theme.light]}" FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsDarkTheme}"
+                            Margin="12,0,8,0" />
+              <TextBlock Text="{Binding Localization[settings.theme.dark]}" FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         Grid.Column="2" VerticalAlignment="Center" />
             </Grid>
           </StackPanel>
         </Border>
-
-        <!-- Dil seçimi -->
-        <Border Background="#2D2D2D" CornerRadius="10" Padding="20">
-          <StackPanel Spacing="10">
+        <Border Grid.Row="4" Grid.Column="2" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="🌐" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Localization[settings.language]}" FontSize="16" FontWeight="Bold" />
+              <TextBlock Text="{Binding Localization[settings.language]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
             <Grid ColumnDefinitions="*,Auto,Auto">
-              <TextBlock Text="EN" FontSize="14" VerticalAlignment="Center" />
-              <ToggleSwitch Grid.Column="1"
-                            IsChecked="{Binding IsTurkish}"
-                            Margin="8,0" />
-              <TextBlock Text="TR" FontSize="14"
-                         Grid.Column="2"
+              <TextBlock Text="EN" FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsTurkish}"
+                            Margin="12,0,8,0" />
+              <TextBlock Text="TR" FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         Grid.Column="2" VerticalAlignment="Center" />
             </Grid>
           </StackPanel>
         </Border>
 
-        <!-- Reset button -->
-        <Button Command="{Binding ResetLauncherCommand}"
-                Background="#c0392b"
-                Foreground="White"
-                Height="48"
-                FontSize="16"
-                Margin="0,12,0,0"
-                CornerRadius="8">
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <TextBlock Text="🗑️" FontSize="18" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding Localization[settings.reset]}" VerticalAlignment="Center" />
+        <!-- ── Row 3: Java Path + Resolution ── -->
+        <Border Grid.Row="6" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="☕" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.java]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Text="{Binding JavaPath}"
+                       Watermark="{Binding Localization[settings.java.placeholder]}"
+                       Height="40" FontSize="13" />
+              <Button Grid.Column="1" Classes="secondary" Height="40" Width="100" Margin="8,0,0,0"
+                      Command="{Binding BrowseJavaCommand}">
+                <TextBlock Text="Gözat" VerticalAlignment="Center" />
+              </Button>
+            </Grid>
           </StackPanel>
-        </Button>
+        </Border>
+        <Border Grid.Row="6" Grid.Column="2" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🖥️" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.resolution]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="6">
+              <TextBlock Text="G:" FontSize="14" VerticalAlignment="Center" />
+              <TextBox Text="{Binding WindowWidth}" Height="36" FontSize="14" Width="70" />
+              <TextBlock Text="×" FontSize="14" VerticalAlignment="Center" />
+              <TextBox Text="{Binding WindowHeight}" Height="36" FontSize="14" Width="70" />
+              <TextBlock Text="px" FontSize="14" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- ── Row 4: JVM Arguments (full width) ── -->
+        <Border Grid.Row="8" Grid.ColumnSpan="3" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="☕" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.jvmargs]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <TextBox Text="{Binding JvmArgs}"
+                     Watermark="{Binding Localization[settings.jvmargs.placeholder]}"
+                     Height="40" FontSize="13"
+                     FontFamily="Consolas, monospace" />
+          </StackPanel>
+        </Border>
+
+        <!-- ── Row 5: Pre-launch + Wrapper ── -->
+        <Border Grid.Row="10" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🚀" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.prelaunch]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <TextBox Text="{Binding PreLaunchCommand}"
+                     Watermark="{Binding Localization[settings.prelaunch.placeholder]}"
+                     Height="40" FontSize="13"
+                     FontFamily="Consolas, monospace" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="10" Grid.Column="2" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.wrapper]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <TextBox Text="{Binding WrapperCommand}"
+                     Watermark="{Binding Localization[settings.wrapper.placeholder]}"
+                     Height="40" FontSize="13"
+                     FontFamily="Consolas, monospace" />
+          </StackPanel>
+        </Border>
+
+        <!-- ── Row 6: Post-exit ── -->
+        <Border Grid.Row="12" Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🔚" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[settings.postexit]}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <TextBox Text="{Binding PostExitCommand}"
+                     Watermark="{Binding Localization[settings.postexit.placeholder]}"
+                     Height="40" FontSize="13"
+                     FontFamily="Consolas, monospace" />
+          </StackPanel>
+        </Border>
+      </Grid>
       </StackPanel>
     </ScrollViewer>
   </Grid>

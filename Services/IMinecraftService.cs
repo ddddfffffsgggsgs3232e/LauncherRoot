@@ -1,12 +1,13 @@
 using System;
 using System.Threading.Tasks;
+using LauncherRoot.Models;
 
 namespace LauncherRoot.Services;
 
 public interface IMinecraftService
 {
     IProgress<double>? Progress { get; set; }
-    Task<bool> EnsureFabricInstalledAsync(string minecraftDir);
-    Task EnsureAssetsDownloadedAsync(string minecraftDir);
-    Task<bool> LaunchMinecraftAsync(string username, int ramGB, string minecraftDir, string modsDir);
+    string? LastError { get; }
+    Task<bool> EnsureInstanceReadyAsync(Instance instance, string assetsDir);
+    Task<bool> LaunchInstanceAsync(Instance instance, string username, int ramGB, string assetsDir, string accessToken = "0", string uuid = "");
 }

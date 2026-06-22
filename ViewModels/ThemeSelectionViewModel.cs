@@ -72,7 +72,7 @@ public partial class ThemeSelectionViewModel : ViewModelBase
 
         try
         {
-            await Task.Run(() => _modrinth.DownloadThemeModsAsync(theme.Mods, modsPath));
+            await _modrinth.DownloadThemeModsAsync(theme.Mods, modsPath, "1.21.4", "fabric");
             _config.Log($"Tema indirildi: {theme.Id}");
         }
         catch (Exception ex)

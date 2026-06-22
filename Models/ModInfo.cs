@@ -1,6 +1,8 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace LauncherRoot.Models;
 
-public class ModInfo
+public partial class ModInfo : ObservableObject
 {
     public string Slug { get; set; } = "";
     public string Name { get; set; } = "";
@@ -8,6 +10,9 @@ public class ModInfo
     public string? IconUrl { get; set; }
     public string? DownloadUrl { get; set; }
     public string? FileName { get; set; }
-    public bool Enabled { get; set; } = true;
+
+    [ObservableProperty]
+    private bool _enabled = true;
+
     public bool Downloaded { get; set; }
 }

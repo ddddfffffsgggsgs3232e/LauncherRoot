@@ -76,6 +76,7 @@ public class LocalizationService : ILocalizationService
                 ["modmng.title"] = "Mod Yönetimi",
                 ["modmng.installed"] = "Yüklü Modlar",
                 ["modmng.search"] = "Mod Ara...",
+                ["modmng.searchPlaceholder"] = "Modrinth'te ara...",
                 ["modmng.searching"] = "Aranıyor...",
                 ["modmng.results"] = "sonuç bulundu",
                 ["modmng.noresults"] = "Sonuç bulunamadı",
@@ -103,6 +104,8 @@ public class LocalizationService : ILocalizationService
                 ["error.network"] = "İnternet bağlantısı hatası!",
                 ["error.api"] = "API hatası oluştu.",
                 ["error.java"] = "Java bulunamadı! Lütfen Java'yı kurun.",
+                ["error.download"] = "Dosyalar indirilemedi. İnternet bağlantınızı kontrol edin.",
+                ["error.version"] = "Sürüm bulunamadı: ",
             };
 
         return new Dictionary<string, string>
@@ -123,13 +126,14 @@ public class LocalizationService : ILocalizationService
             ["menu.back"] = "Back",
             ["modmng.title"] = "Mod Management",
             ["modmng.installed"] = "Installed Mods",
-                ["modmng.search"] = "Search Mods...",
-                ["modmng.searching"] = "Searching...",
-                ["modmng.results"] = "results found",
-                ["modmng.noresults"] = "No results found",
-                ["modmng.install"] = "Install",
-                ["modmng.enabled"] = "Enabled",
-                ["modmng.disabled"] = "Disabled",
+            ["modmng.search"] = "Search Mods...",
+            ["modmng.searchPlaceholder"] = "Search on Modrinth...",
+            ["modmng.searching"] = "Searching...",
+            ["modmng.results"] = "results found",
+            ["modmng.noresults"] = "No results found",
+            ["modmng.install"] = "Install",
+            ["modmng.enabled"] = "Enabled",
+            ["modmng.disabled"] = "Disabled",
             ["settings.title"] = "Settings",
             ["settings.ram"] = "RAM (GB)",
             ["settings.fps"] = "FPS Limit",
@@ -151,6 +155,8 @@ public class LocalizationService : ILocalizationService
             ["error.network"] = "Network connection error!",
             ["error.api"] = "An API error occurred.",
             ["error.java"] = "Java not found! Please install Java.",
+            ["error.download"] = "Failed to download files. Check your internet connection.",
+            ["error.version"] = "Version not found: ",
         };
     }
 }

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace LauncherRoot.Models;
 
@@ -61,7 +63,7 @@ public class ModrinthSearchResult
     public List<ModrinthHit> Hits { get; set; } = [];
 }
 
-public class ModrinthHit
+public partial class ModrinthHit : ObservableObject
 {
     [JsonPropertyName("slug")]
     public string Slug { get; set; } = "";
@@ -77,4 +79,8 @@ public class ModrinthHit
 
     [JsonPropertyName("project_type")]
     public string ProjectType { get; set; } = "";
+
+    [JsonIgnore]
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _icon;
 }

@@ -2,135 +2,173 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:models="clr-namespace:LauncherRoot.Models"
              x:Class="LauncherRoot.Views.ModManagementView">
-  <Grid RowDefinitions="Auto,*"
-        ColumnDefinitions="Auto,*,2*">
-    <!-- Back button -->
-    <Button Command="{Binding BackCommand}"
-            Grid.Row="0"
-            Grid.Column="0"
-            Margin="12,12"
-            FontSize="15"
-            Width="130">
-      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-        <TextBlock Text="←" FontSize="16" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Localization[menu.back]}" VerticalAlignment="Center" />
-      </StackPanel>
-    </Button>
+  <Grid RowDefinitions="Auto,Auto,*" Margin="0,0,0,0">
+    <!-- Top bar: Back button + Headers -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,*,*" Margin="12,12,20,0">
+      <Button Command="{Binding BackCommand}"
+              Classes="ghost"
+              Width="110" Height="36"
+              FontSize="14"
+              HorizontalAlignment="Left">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+          <TextBlock Text="←" FontSize="16" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Localization[menu.back]}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
 
-    <!-- Section headers -->
-    <StackPanel Orientation="Horizontal" Spacing="6"
-                Grid.Row="0" Grid.Column="1"
-                VerticalAlignment="Center" Margin="12,12">
-      <TextBlock Text="📁" FontSize="16" VerticalAlignment="Center" />
-      <TextBlock Text="{Binding Localization[modmng.installed]}"
-                 FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
-    </StackPanel>
-    <StackPanel Orientation="Horizontal" Spacing="6"
-                Grid.Row="0" Grid.Column="2"
-                VerticalAlignment="Center" Margin="12,12">
-      <TextBlock Text="🔍" FontSize="16" VerticalAlignment="Center" />
-      <TextBlock Text="{Binding Localization[modmng.search]}"
-                 FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
-    </StackPanel>
-
-    <!-- Left panel: Installed mods -->
-    <Border Grid.Row="1"
-            Grid.Column="1"
-            Margin="8,0,4,8"
-            CornerRadius="8"
-            Padding="8"
-            Background="#2D2D2D">
-      <ScrollViewer>
-        <ItemsControl ItemsSource="{Binding InstalledMods}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate DataType="{x:Type models:ModInfo}">
-              <Border Margin="0,4"
-                      CornerRadius="6"
-                      Padding="8">
-                <Grid ColumnDefinitions="*,Auto">
-                  <StackPanel>
-                    <TextBlock Text="{Binding Name}"
-                               FontSize="14"
-                               FontWeight="Bold" />
-                    <TextBlock Text="{Binding FileName}"
-                               FontSize="11"
-                               Opacity="0.6" />
-                  </StackPanel>
-                  <ToggleSwitch Grid.Column="1"
-                                IsChecked="{Binding Enabled}"
-                                Command="{Binding DataContext.ToggleModCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                CommandParameter="{Binding}" />
-                </Grid>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
-    </Border>
-
-    <!-- Right panel: Search -->
-    <Border Grid.Row="1"
-            Grid.Column="2"
-            Margin="4,0,8,8"
-            CornerRadius="8"
-            Padding="8"
-            Background="#2D2D2D">
-      <Grid RowDefinitions="Auto,Auto,*" Margin="8">
-        <Grid ColumnDefinitions="*,Auto" Grid.Row="0" Margin="0,0,0,8">
-          <TextBox Text="{Binding SearchQuery}"
-                   Watermark="{Binding Localization[modmng.search]}"
-                   Height="36" />
-          <Button Command="{Binding SearchCommand}"
+      <StackPanel Orientation="Horizontal" Spacing="8"
                   Grid.Column="1"
-                  Margin="8,0,0,0"
-                  Height="36">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <TextBlock Text="🔎" FontSize="14" />
-              <TextBlock Text="{Binding Localization[modmng.search]}" />
+                  VerticalAlignment="Center" Margin="12,0">
+        <TextBlock Text="📁" FontSize="16" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Localization[modmng.installed]}"
+                   Classes="h3" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8"
+                  Grid.Column="2"
+                  VerticalAlignment="Center" Margin="12,0">
+        <TextBlock Text="🔍" FontSize="16" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Localization[modmng.search]}"
+                   Classes="h3" VerticalAlignment="Center" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Divider -->
+    <Border Grid.Row="1" Height="1"
+            Background="{DynamicResource BorderBrush}"
+            Margin="16,12,16,8" />
+
+    <!-- Content panels -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,2*" Margin="16,0,16,16">
+      <!-- Left: Installed mods -->
+      <Border Classes="card" Padding="12" Margin="0,0,6,0" Grid.Column="0">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock Text="{Binding Localization[modmng.installed]}"
+                     FontSize="14" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     Margin="4,0,0,8" />
+
+          <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding InstalledMods}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:ModInfo}">
+                  <Border Background="{DynamicResource BgSecondaryBrush}"
+                          CornerRadius="8" Padding="10"
+                          Margin="0,3">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock Text="{Binding Name}"
+                                    FontSize="13" FontWeight="SemiBold"
+                                    Foreground="{DynamicResource TextPrimaryBrush}"
+                                    TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding FileName}"
+                                    FontSize="10"
+                                    Foreground="{DynamicResource TextMutedBrush}"
+                                    TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1"
+                                    IsChecked="{Binding Enabled}"
+                                    VerticalAlignment="Center"
+                                    IsCheckedChanged="ToggleSwitch_IsCheckedChanged" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- Right: Search panel -->
+      <Border Classes="card" Padding="12" Margin="6,0,0,0" Grid.Column="1">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <!-- Search bar -->
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+            <TextBox Text="{Binding SearchQuery}"
+                     Watermark="{Binding Localization[modmng.searchPlaceholder]}"
+                     Height="34" FontSize="13" />
+            <Button Command="{Binding SearchCommand}"
+                    Grid.Column="1"
+                    Classes="primary"
+                    Height="34"
+                    Padding="12 0"
+                    Margin="8,0,0,0"
+                    FontSize="12">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="🔎" FontSize="12" />
+                <TextBlock Text="{Binding Localization[modmng.search]}" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Search status -->
+          <TextBlock Text="{Binding SearchStatus}"
+                     Grid.Row="1"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Margin="4,0,0,8" />
+
+          <!-- Search results -->
+          <ScrollViewer Grid.Row="2">
+            <ItemsControl ItemsSource="{Binding SearchResults}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:ModrinthHit}">
+                  <Border Background="{DynamicResource BgSecondaryBrush}"
+                          CornerRadius="8" Padding="10"
+                          Margin="0,3">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Width="36" Height="36"
+                              CornerRadius="6"
+                              ClipToBounds="True"
+                              Margin="0,0,10,0"
+                              Background="{DynamicResource BgHoverBrush}">
+                        <Image Source="{Binding Icon}"
+                               Stretch="UniformToFill" />
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}"
+                                     FontSize="13" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Description}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxWidth="280" />
+                      </StackPanel>
+                      <Button Grid.Column="2"
+                              Command="{Binding DataContext.InstallModCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                              CommandParameter="{Binding}"
+                              Classes="secondary"
+                              Height="30" Padding="10 0"
+                              VerticalAlignment="Center"
+                              FontSize="12">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                          <TextBlock Text="⬇" FontSize="12" />
+                          <TextBlock Text="{Binding DataContext.Localization[modmng.install], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                        </StackPanel>
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <!-- Install all button (when something is selected) -->
+          <Button Grid.Row="3"
+                  Classes="primary"
+                  Margin="0,8,0,0"
+                  Height="36"
+                  FontSize="13"
+                  IsVisible="False">
+            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+              <TextBlock Text="⬇" FontSize="14" />
+              <TextBlock Text="Tümünü Yükle" />
             </StackPanel>
           </Button>
         </Grid>
-
-        <TextBlock Text="{Binding SearchStatus}"
-                   Grid.Row="1"
-                   FontSize="12"
-                   Opacity="0.7"
-                   Margin="0,0,0,8" />
-
-        <ScrollViewer Grid.Row="2">
-          <ItemsControl ItemsSource="{Binding SearchResults}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="{x:Type models:ModrinthHit}">
-                <Border Margin="0,4"
-                        CornerRadius="6"
-                        Padding="8">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel>
-                      <TextBlock Text="{Binding Title}"
-                                 FontSize="14"
-                                 FontWeight="Bold" />
-                      <TextBlock Text="{Binding Description}"
-                                 FontSize="11"
-                                 Opacity="0.6"
-                                 TextTrimming="CharacterEllipsis"
-                                 MaxWidth="300" />
-                    </StackPanel>
-                    <Button Command="{Binding DataContext.InstallModCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                            CommandParameter="{Binding}"
-                            Height="32"
-                            VerticalAlignment="Center">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="⬇" FontSize="14" />
-                        <TextBlock Text="{Binding DataContext.Localization[modmng.install], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
-                      </StackPanel>
-                    </Button>
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </Grid>
-    </Border>
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>

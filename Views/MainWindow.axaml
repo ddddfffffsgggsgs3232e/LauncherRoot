@@ -9,6 +9,7 @@
         MinWidth="800"
         MinHeight="600"
         WindowStartupLocation="CenterScreen"
+        TransparencyLevelHint="Blur"
         Name="MainWin">
   <Window.DataTemplates>
     <DataTemplate DataType="{x:Type vm:PlayerSetupViewModel}">
@@ -29,7 +30,24 @@
     <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
       <views:SettingsView />
     </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:InstanceCreateViewModel}">
+      <views:InstanceCreateView />
+    </DataTemplate>
   </Window.DataTemplates>
 
-  <ContentControl Content="{Binding CurrentViewModel}" />
+  <Panel>
+    <!-- Background gradient -->
+    <Border Background="{DynamicResource BgPrimaryBrush}" />
+
+    <!-- Old page (cross-fade out) -->
+    <ContentControl x:Name="OldPageHost"
+                    Classes="page"
+                    IsHitTestVisible="False"
+                    Opacity="0" />
+
+    <!-- New page (cross-fade in) -->
+    <ContentControl x:Name="NewPageHost"
+                    Content="{Binding CurrentViewModel}"
+                    Classes="page" />
+  </Panel>
 </Window>

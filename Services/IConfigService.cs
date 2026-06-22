@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using LauncherRoot.Models;
 
@@ -8,6 +9,9 @@ public interface IConfigService
     string RootPath { get; }
     Task<PlayerConfig> LoadPlayerAsync();
     Task SavePlayerAsync(PlayerConfig config);
+    Task DeleteAccountAsync(string accountId);
+    Task<List<PlayerConfig>> LoadAccountsAsync();
+    Task SwitchAccountAsync(string accountId);
     Task<LauncherConfig> LoadConfigAsync();
     Task SaveConfigAsync(LauncherConfig config);
     Task<ModState> LoadModStateAsync();
@@ -15,6 +19,7 @@ public interface IConfigService
     string GetModsPath();
     string GetMinecraftPath();
     string GetLogsPath();
+    string GetAssetsPath();
     void Log(string message);
     void ResetAll();
 }
