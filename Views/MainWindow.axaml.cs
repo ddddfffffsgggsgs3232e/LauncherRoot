@@ -22,10 +22,14 @@ public partial class MainWindow : Window
         var minecraft = new MinecraftService(config, instances);
         var theme = new ThemeService(config);
         var localization = new LocalizationService();
+        var updater = new UpdateService(config);
+        var installer = new InstallService();
+        var curseforge = new CurseForgeService(config);
+        var backups = new BackupService(config, instances);
 
         _ = ApplyStartupConfig(config, localization);
 
-        var vm = new MainWindowViewModel(config, modrinth, minecraft, theme, localization, instances);
+        var vm = new MainWindowViewModel(config, modrinth, minecraft, theme, localization, instances, updater, installer, curseforge, backups);
         DataContext = vm;
 
         vm.Navigating += OnNavigating;

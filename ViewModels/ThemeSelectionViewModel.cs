@@ -14,6 +14,8 @@ public partial class ThemeSelectionViewModel : ViewModelBase
     private readonly IModrinthService _modrinth;
     private readonly MainWindowViewModel _main;
     private readonly ILocalizationService _localization;
+    private readonly IInstanceService _instances;
+    private readonly IThemeService _themeService;
 
     [ObservableProperty]
     private ObservableCollection<Theme> _themes = [];
@@ -29,20 +31,21 @@ public partial class ThemeSelectionViewModel : ViewModelBase
 
     public ILocalizationService Localization => _localization;
 
-    public ThemeSelectionViewModel(ConfigService config, IModrinthService modrinth, MainWindowViewModel main, ILocalizationService localization)
+    public ThemeSelectionViewModel(ConfigService config, IModrinthService modrinth, MainWindowViewModel main, ILocalizationService localization, IInstanceService instances, IThemeService themeService)
     {
         _config = config;
         _modrinth = modrinth;
         _main = main;
         _localization = localization;
+        _instances = instances;
+        _themeService = themeService;
         LoadThemes();
     }
 
     private void LoadThemes()
     {
         Theme.CurrentLanguage = _localization.CurrentLanguage;
-        var themeService = new ThemeService(_config);
-        Themes = new ObservableCollection<Theme>(themeService.GetThemes());
+        Themes = new ObservableCollection<Theme>(_themeService.GetThemes());
     }
 
     [RelayCommand]
@@ -70,9 +73,21 @@ public partial class ThemeSelectionViewModel : ViewModelBase
 
         _modrinth.Progress = progress;
 
+        var version = "1.21.4";
+        var loader = "fabric";
+        if (!string.IsNullOrEmpty(launcherConfig.SelectedInstanceId))
+        {
+            var instance = await _instances.GetInstanceAsync(launcherConfig.SelectedInstanceId);
+            if (instance != null)
+            {
+                version = instance.Version;
+                loader = instance.Loader;
+            }
+        }
+
         try
         {
-            await _modrinth.DownloadThemeModsAsync(theme.Mods, modsPath, "1.21.4", "fabric");
+            await _modrinth.DownloadThemeModsAsync(theme.Mods, modsPath, version, loader);
             _config.Log($"Tema indirildi: {theme.Id}");
         }
         catch (Exception ex)

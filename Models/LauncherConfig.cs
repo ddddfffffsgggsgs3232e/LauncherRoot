@@ -9,7 +9,6 @@ public class LauncherConfig
     public bool DarkTheme { get; set; } = true;
     public string Language { get; set; } = "tr";
     public string? SelectedTheme { get; set; }
-    public bool FabricInstalled { get; set; }
     public string? SelectedInstanceId { get; set; }
     public string JvmArgs { get; set; } = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:MaxGCPauseMillis=50 -XX:+DisableExplicitGC";
     public string PreLaunchCommand { get; set; } = "";
@@ -20,4 +19,7 @@ public class LauncherConfig
     public int WindowHeight { get; set; } = 480;
     public List<PlayerConfig> Accounts { get; set; } = [];
     public string ActiveAccountId { get; set; } = "";
+    public string MicrosoftClientId { get; set; } = "";
+    public List<string> Groups { get; set; } = [];
+    public string CurseForgeApiKey { get; set; } = "";
 }

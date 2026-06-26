@@ -11,6 +11,11 @@
         WindowStartupLocation="CenterScreen"
         TransparencyLevelHint="Blur"
         Name="MainWin">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Escape" Command="{Binding GoBackCommand}" />
+    <KeyBinding Gesture="CTRL+W" Command="{Binding CloseWindowCommand}" />
+    <KeyBinding Gesture="F5" Command="{Binding RefreshCommand}" />
+  </Window.KeyBindings>
   <Window.DataTemplates>
     <DataTemplate DataType="{x:Type vm:PlayerSetupViewModel}">
       <views:PlayerSetupView />
@@ -36,16 +41,13 @@
   </Window.DataTemplates>
 
   <Panel>
-    <!-- Background gradient -->
     <Border Background="{DynamicResource BgPrimaryBrush}" />
 
-    <!-- Old page (cross-fade out) -->
     <ContentControl x:Name="OldPageHost"
                     Classes="page"
                     IsHitTestVisible="False"
                     Opacity="0" />
 
-    <!-- New page (cross-fade in) -->
     <ContentControl x:Name="NewPageHost"
                     Content="{Binding CurrentViewModel}"
                     Classes="page" />

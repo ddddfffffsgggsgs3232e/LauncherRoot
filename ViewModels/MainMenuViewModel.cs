@@ -4,7 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Media;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,6 +24,8 @@ public partial class MainMenuViewModel : ViewModelBase
     private readonly MainWindowViewModel _main;
     private readonly ILocalizationService _localization;
     private readonly IInstanceService _instances;
+    private readonly ICurseForgeService _curseforge;
+    private readonly IBackupService _backups;
 
     [ObservableProperty]
     private string _playerUsername = "";
@@ -41,12 +46,22 @@ public partial class MainMenuViewModel : ViewModelBase
     private ObservableCollection<Instance> _instanceList = [];
 
     [ObservableProperty]
+    private ObservableCollection<InstanceGroupItem> _groupedInstanceList = [];
+
+    [ObservableProperty]
     private Instance? _selectedInstance;
 
     [ObservableProperty]
     private bool _hasInstances;
 
-    public IBrush BackgroundBrush { get; }
+    [ObservableProperty]
+    private bool _hasError;
+
+    [ObservableProperty]
+    private ObservableCollection<BackupInfo> _availableBackups = [];
+
+    [ObservableProperty]
+    private bool _showBackupPanel;
 
     public ILocalizationService Localization => _localization;
 
@@ -56,7 +71,9 @@ public partial class MainMenuViewModel : ViewModelBase
         IMinecraftService minecraft,
         MainWindowViewModel main,
         ILocalizationService localization,
-        IInstanceService instances)
+        IInstanceService instances,
+        ICurseForgeService curseforge,
+        IBackupService backups)
     {
         _config = config;
         _modrinth = modrinth;
@@ -64,18 +81,8 @@ public partial class MainMenuViewModel : ViewModelBase
         _main = main;
         _localization = localization;
         _instances = instances;
-
-        BackgroundBrush = new LinearGradientBrush
-        {
-            StartPoint = RelativePoint.TopLeft,
-            EndPoint = RelativePoint.BottomRight,
-            GradientStops =
-            {
-                new GradientStop(Color.Parse("#0D1117"), 0),
-                new GradientStop(Color.Parse("#1a2332"), 0.5),
-                new GradientStop(Color.Parse("#0f1923"), 1),
-            }
-        };
+        _curseforge = curseforge;
+        _backups = backups;
 
         _ = LoadAsync();
     }
@@ -89,6 +96,7 @@ public partial class MainMenuViewModel : ViewModelBase
         var allInstances = await _instances.LoadInstancesAsync();
         InstanceList = new ObservableCollection<Instance>(allInstances);
         HasInstances = InstanceList.Count > 0;
+        RebuildGroupedList();
 
         var cfg = await _config.LoadConfigAsync();
         if (cfg.SelectedInstanceId != null)
@@ -97,12 +105,27 @@ public partial class MainMenuViewModel : ViewModelBase
             SelectedInstance = InstanceList[0];
     }
 
+    private void RebuildGroupedList()
+    {
+        var groups = InstanceList
+            .GroupBy(i => string.IsNullOrEmpty(i.Group) ? _localization["group.ungrouped"] : i.Group)
+            .OrderBy(g => g.Key == _localization["group.ungrouped"] ? 1 : 0)
+            .ThenBy(g => g.Key);
+
+        var items = new ObservableCollection<InstanceGroupItem>();
+        foreach (var group in groups)
+        {
+            items.Add(new InstanceGroupItem { IsGroup = true, GroupName = group.Key });
+            foreach (var instance in group.OrderBy(i => i.Name))
+                items.Add(new InstanceGroupItem { IsGroup = false, Instance = instance });
+        }
+        GroupedInstanceList = items;
+    }
+
     partial void OnSelectedInstanceChanged(Instance? value)
     {
         if (value != null)
-        {
             _ = SelectInstanceAsync(value);
-        }
     }
 
     private async Task SelectInstanceAsync(Instance instance)
@@ -149,12 +172,83 @@ public partial class MainMenuViewModel : ViewModelBase
         _main.NavigateTo(PageType.Settings);
     }
 
-    [RelayCommand]
-    private void EditInstance(Instance? instance)
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task EditInstance(Instance? instance)
     {
         if (instance == null) return;
+
+        // Auto-backup before editing
+        StatusText = _localization["status.backingup"];
+        ShowStatusBar = true;
+        try
+        {
+            await _backups.BackupAsync(instance);
+        }
+        catch (Exception ex)
+        {
+            _config.Log($"Otomatik yedekleme hatası: {ex.Message}");
+        }
+        ShowStatusBar = false;
+
         _main.EditingInstance = instance;
         _main.NavigateTo(PageType.InstanceEdit);
+    }
+
+    [RelayCommand]
+    private async Task ShowBackups(Instance? instance)
+    {
+        if (instance == null) return;
+        var backups = await _backups.GetBackupsAsync(instance);
+        AvailableBackups = new ObservableCollection<BackupInfo>(backups);
+        ShowBackupPanel = true;
+    }
+
+    [RelayCommand]
+    private void HideBackups()
+    {
+        ShowBackupPanel = false;
+        AvailableBackups.Clear();
+    }
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task RestoreBackup(BackupInfo? backup)
+    {
+        if (backup == null || SelectedInstance == null) return;
+
+        var instance = SelectedInstance;
+        StatusText = _localization["status.restoring"];
+        ShowStatusBar = true;
+        HasError = false;
+
+        var ok = await _backups.RestoreAsync(instance, backup);
+        if (ok)
+            ShowBackupPanel = false;
+        else
+        {
+            HasError = true;
+            StatusText = _localization["error.restore"];
+            await Task.Delay(3000);
+        }
+
+        ShowStatusBar = false;
+    }
+
+    [RelayCommand]
+    private async Task DeleteBackup(BackupInfo? backup)
+    {
+        if (backup == null) return;
+        await _backups.DeleteBackupAsync(backup);
+        AvailableBackups.Remove(backup);
+    }
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task BackupNow(Instance? instance)
+    {
+        if (instance == null) return;
+        StatusText = _localization["status.backingup"];
+        ShowStatusBar = true;
+        await _backups.BackupAsync(instance);
+        ShowStatusBar = false;
     }
 
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -164,6 +258,7 @@ public partial class MainMenuViewModel : ViewModelBase
 
         await _instances.DeleteInstanceAsync(instance.Id);
         InstanceList.Remove(instance);
+        RebuildGroupedList();
 
         HasInstances = InstanceList.Count > 0;
 
@@ -177,6 +272,127 @@ public partial class MainMenuViewModel : ViewModelBase
                 await _config.SaveConfigAsync(cfg);
             }
         }
+    }
+
+    [RelayCommand]
+    private async Task SetInstanceGroup(Instance? instance)
+    {
+        if (instance == null) return;
+
+        var groups = await GetOrLoadGroupsAsync();
+        var cfg = await _config.LoadConfigAsync();
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var window = desktop.MainWindow;
+            if (window == null) return;
+
+            var dialog = new Avalonia.Controls.Window
+            {
+                Title = _localization["group.select"],
+                SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
+                CanResize = false,
+                WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner,
+                Padding = new Avalonia.Thickness(20),
+                MinWidth = 300,
+            };
+
+            var stack = new Avalonia.Controls.StackPanel { Spacing = 12 };
+
+            var combo = new Avalonia.Controls.ComboBox
+            {
+                ItemsSource = new ObservableCollection<string>(["", .. groups]),
+                SelectedItem = instance.Group,
+                Width = 250,
+                Height = 34,
+            };
+
+            var newGroupBox = new Avalonia.Controls.TextBox
+            {
+                Watermark = _localization["group.new"],
+                Width = 250,
+                Height = 34,
+            };
+
+            var btnPanel = new Avalonia.Controls.StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Horizontal,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                Spacing = 8,
+            };
+
+            var cancelBtn = new Avalonia.Controls.Button
+            {
+                Content = _localization["microsoft.cancel"],
+                MinWidth = 80,
+                Height = 32,
+                Classes = { "secondary" },
+            };
+            cancelBtn.Click += (_, _) => dialog.Close(false);
+
+            var okBtn = new Avalonia.Controls.Button
+            {
+                Content = "OK",
+                MinWidth = 80,
+                Height = 32,
+                Classes = { "primary" },
+            };
+            okBtn.Click += (_, _) => dialog.Close(true);
+
+            btnPanel.Children.Add(cancelBtn);
+            btnPanel.Children.Add(okBtn);
+
+            stack.Children.Add(new Avalonia.Controls.TextBlock
+            {
+                Text = _localization["group.select"],
+                FontSize = 14,
+                FontWeight = Avalonia.Media.FontWeight.SemiBold,
+            });
+            stack.Children.Add(combo);
+            stack.Children.Add(new Avalonia.Controls.TextBlock
+            {
+                Text = _localization["group.or"],
+                FontSize = 11,
+                Foreground = Avalonia.Media.Brushes.Gray,
+            });
+            stack.Children.Add(newGroupBox);
+            stack.Children.Add(btnPanel);
+            dialog.Content = stack;
+
+            var result = await dialog.ShowDialog<bool>(window);
+            if (!result) return;
+
+            var selectedGroup = !string.IsNullOrWhiteSpace(newGroupBox.Text)
+                ? newGroupBox.Text.Trim()
+                : (combo.SelectedItem as string ?? "");
+
+            instance.Group = selectedGroup;
+            await _instances.UpdateInstanceAsync(instance);
+            RebuildGroupedList();
+
+            if (!string.IsNullOrEmpty(selectedGroup) && !cfg.Groups.Contains(selectedGroup))
+            {
+                cfg.Groups.Add(selectedGroup);
+                await _config.SaveConfigAsync(cfg);
+            }
+        }
+    }
+
+    private async Task<List<string>> GetOrLoadGroupsAsync()
+    {
+        var cfg = await _config.LoadConfigAsync();
+        var fromInstances = InstanceList
+            .Select(i => i.Group)
+            .Where(g => !string.IsNullOrEmpty(g))
+            .Distinct()
+            .ToList();
+        foreach (var g in fromInstances)
+        {
+            if (!cfg.Groups.Contains(g))
+                cfg.Groups.Add(g);
+        }
+        await _config.SaveConfigAsync(cfg);
+        return cfg.Groups;
     }
 
     [RelayCommand]
@@ -203,6 +419,71 @@ public partial class MainMenuViewModel : ViewModelBase
         if (instance == null) return;
         var clone = await _instances.DuplicateInstanceAsync(instance, $"{instance.Name} (kopya)");
         InstanceList.Add(clone);
+        RebuildGroupedList();
+    }
+
+    [RelayCommand]
+    private async Task ExportInstance(Instance? instance)
+    {
+        if (instance == null) return;
+
+        try
+        {
+            var data = await _instances.ExportInstanceAsync(instance);
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var window = desktop.MainWindow;
+                if (window == null) return;
+
+                var file = await window.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+                {
+                    SuggestedFileName = $"{instance.Name}.mrpack",
+                    DefaultExtension = "mrpack",
+                });
+                if (file != null)
+                {
+                    await using var stream = await file.OpenWriteAsync();
+                    await stream.WriteAsync(data);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _config.Log($"Dışa aktarma hatası: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportInstance()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var window = desktop.MainWindow;
+            if (window == null) return;
+
+            var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                AllowMultiple = false,
+                FileTypeFilter = [new FilePickerFileType("MRPack") { Patterns = ["*.mrpack"] }],
+            });
+            if (files.Count == 0) return;
+
+            try
+            {
+                var data = await File.ReadAllBytesAsync(files[0].Path.LocalPath);
+                var instance = await _instances.ImportInstanceAsync(data);
+                if (instance != null)
+                {
+                    InstanceList.Add(instance);
+                    RebuildGroupedList();
+                    HasInstances = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _config.Log($"İçe aktarma hatası: {ex.Message}");
+            }
+        }
     }
 
     [RelayCommand]
@@ -224,7 +505,7 @@ public partial class MainMenuViewModel : ViewModelBase
     [RelayCommand]
     private void OpenLogViewer()
     {
-        var window = new Views.LogViewerWindow();
+        var window = new Views.LogViewerWindow(_localization);
         window.Show();
     }
 
@@ -241,6 +522,50 @@ public partial class MainMenuViewModel : ViewModelBase
             UseShellExecute = true,
         };
         System.Diagnostics.Process.Start(psi);
+    }
+
+    [RelayCommand]
+    private async Task OpenScreenshotGallery(Instance? instance)
+    {
+        if (instance == null) return;
+        var path = Path.Combine(_instances.GetInstanceGamePath(instance), "minecraft", "screenshots");
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+            return;
+        }
+
+        var files = Directory.GetFiles(path, "*.png").OrderByDescending(f => File.GetLastWriteTime(f)).ToArray();
+        if (files.Length == 0) return;
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var window = desktop.MainWindow;
+            if (window == null) return;
+
+            var gallery = new Views.ScreenshotGalleryWindow(files, _localization);
+            await gallery.ShowDialog(window);
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyError()
+    {
+        if (string.IsNullOrEmpty(StatusText)) return;
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var clipboard = desktop.MainWindow?.Clipboard;
+            if (clipboard != null)
+                await clipboard.SetTextAsync(StatusText);
+        }
+    }
+
+    [RelayCommand]
+    private void DismissError()
+    {
+        ShowStatusBar = false;
+        HasError = false;
     }
 
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -263,6 +588,7 @@ public partial class MainMenuViewModel : ViewModelBase
         }
 
         ShowStatusBar = true;
+        HasError = false;
         StatusText = _localization["status.preparing"];
 
         var progress = new Progress<double>(p =>
@@ -291,6 +617,7 @@ public partial class MainMenuViewModel : ViewModelBase
         if (!ready)
         {
             StatusText = _minecraft.LastError ?? _localization["error.download"];
+            HasError = true;
             await Task.Delay(5000);
             ShowStatusBar = false;
             return;
@@ -299,17 +626,22 @@ public partial class MainMenuViewModel : ViewModelBase
         StatusProgress = 0;
         StatusText = _localization["status.launching"];
 
+        var startTime = DateTime.UtcNow;
         var launched = await _minecraft.LaunchInstanceAsync(
             instance, player.Username, launcherConfig.RamGB, _config.GetAssetsPath(),
             player.AccessToken, player.Uuid);
 
         if (launched)
         {
+            var elapsed = (long)(DateTime.UtcNow - startTime).TotalSeconds;
+            _ = _instances.AddPlayTimeAsync(instance.Id, elapsed);
+            instance.PlayTimeSeconds += elapsed;
             Environment.Exit(0);
         }
         else
         {
             StatusText = _minecraft.LastError ?? _localization["error.java"];
+            HasError = true;
             await Task.Delay(5000);
             ShowStatusBar = false;
         }

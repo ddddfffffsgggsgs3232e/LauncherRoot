@@ -2,9 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:models="clr-namespace:LauncherRoot.Models"
              x:Class="LauncherRoot.Views.ModManagementView">
-  <Grid RowDefinitions="Auto,Auto,*" Margin="0,0,0,0">
-    <!-- Top bar: Back button + Headers -->
-    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,*,*" Margin="12,12,20,0">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="0,0,0,0">
+    <!-- Top bar with back button -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="12,12,20,0">
       <Button Command="{Binding BackCommand}"
               Classes="ghost"
               Width="110" Height="36"
@@ -16,40 +16,112 @@
         </StackPanel>
       </Button>
 
-      <StackPanel Orientation="Horizontal" Spacing="8"
-                  Grid.Column="1"
-                  VerticalAlignment="Center" Margin="12,0">
-        <TextBlock Text="📁" FontSize="16" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Localization[modmng.installed]}"
-                   Classes="h3" VerticalAlignment="Center" />
-      </StackPanel>
-
-      <StackPanel Orientation="Horizontal" Spacing="8"
-                  Grid.Column="2"
-                  VerticalAlignment="Center" Margin="12,0">
-        <TextBlock Text="🔍" FontSize="16" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Localization[modmng.search]}"
-                   Classes="h3" VerticalAlignment="Center" />
-      </StackPanel>
+      <TextBlock Text="{Binding InstanceName}"
+                 Grid.Column="1"
+                 Classes="h2"
+                 VerticalAlignment="Center"
+                 Margin="16,0,0,0"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
     </Grid>
 
-    <!-- Divider -->
-    <Border Grid.Row="1" Height="1"
-            Background="{DynamicResource BorderBrush}"
-            Margin="16,12,16,8" />
+    <!-- Tabs -->
+    <Border Grid.Row="1" Margin="16,8,16,0" Background="{DynamicResource BgCardBrush}"
+            CornerRadius="8" Padding="4">
+      <Grid ColumnDefinitions="*,*,*">
+        <Button Command="{Binding SelectTabCommand}" CommandParameter="0"
+                Padding="12,8" FontSize="13" Cursor="Hand"
+                Background="{Binding SelectedTab, Converter={StaticResource TabBgConverter}, ConverterParameter=0}"
+                Foreground="{Binding SelectedTab, Converter={StaticResource TabFgConverter}, ConverterParameter=0}"
+                CornerRadius="6" BorderThickness="0" Margin="0,0,2,0">
+          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Localization[modmng.mods]}" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="1" Command="{Binding SelectTabCommand}" CommandParameter="1"
+                Padding="12,8" FontSize="13" Cursor="Hand"
+                Background="{Binding SelectedTab, Converter={StaticResource TabBgConverter}, ConverterParameter=1}"
+                Foreground="{Binding SelectedTab, Converter={StaticResource TabFgConverter}, ConverterParameter=1}"
+                CornerRadius="6" BorderThickness="0" Margin="1,0,1,0">
+          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Localization[modmng.resourcepacks]}" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="2" Command="{Binding SelectTabCommand}" CommandParameter="2"
+                Padding="12,8" FontSize="13" Cursor="Hand"
+                Background="{Binding SelectedTab, Converter={StaticResource TabBgConverter}, ConverterParameter=2}"
+                Foreground="{Binding SelectedTab, Converter={StaticResource TabFgConverter}, ConverterParameter=2}"
+                CornerRadius="6" BorderThickness="0" Margin="2,0,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Localization[modmng.shaderpacks]}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
 
-    <!-- Content panels -->
-    <Grid Grid.Row="2" ColumnDefinitions="*,2*" Margin="16,0,16,16">
-      <!-- Left: Installed mods -->
+    <!-- Divider -->
+    <Border Grid.Row="2" Height="1"
+            Background="{DynamicResource BorderBrush}"
+            Margin="16,4,16,8" />
+
+    <!-- Content -->
+    <Grid Grid.Row="3" ColumnDefinitions="*,2*" Margin="16,0,16,16">
+      <!-- Left: Installed items -->
       <Border Classes="card" Padding="12" Margin="0,0,6,0" Grid.Column="0">
-        <Grid RowDefinitions="Auto,*">
+        <Grid RowDefinitions="Auto,*,Auto">
           <TextBlock Text="{Binding Localization[modmng.installed]}"
                      FontSize="14" FontWeight="SemiBold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      Margin="4,0,0,8" />
 
           <ScrollViewer Grid.Row="1">
-            <ItemsControl ItemsSource="{Binding InstalledMods}">
+            <StackPanel>
+            <!-- Mods tab -->
+            <ItemsControl ItemsSource="{Binding InstalledMods}"
+                          IsVisible="{Binding SelectedTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=0}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:ModInfo}">
+                  <Border Background="{DynamicResource BgSecondaryBrush}"
+                          CornerRadius="8" Padding="10"
+                          Margin="0,3">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                      <StackPanel>
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding FileName}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding DataContext.Localization[modmng.updateavailable], RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   IsVisible="{Binding HasUpdate}" />
+                      </StackPanel>
+                      <Button Grid.Column="1"
+                              Command="{Binding DataContext.UpdateModCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                              CommandParameter="{Binding}"
+                              Classes="primary"
+                              Height="28" Padding="8 0"
+                              VerticalAlignment="Center"
+                              FontSize="11"
+                              Margin="0,0,4,0"
+                              IsVisible="{Binding HasUpdate}">
+                        <TextBlock Text="{Binding DataContext.Localization[modmng.update], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                      </Button>
+                      <ToggleSwitch Grid.Column="2"
+                                    IsChecked="{Binding Enabled}"
+                                    VerticalAlignment="Center"
+                                    IsCheckedChanged="ToggleSwitch_IsCheckedChanged" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Resource packs tab -->
+            <ItemsControl ItemsSource="{Binding InstalledResourcePacks}"
+                          IsVisible="{Binding SelectedTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=1}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type models:ModInfo}">
                   <Border Background="{DynamicResource BgSecondaryBrush}"
@@ -58,13 +130,13 @@
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel>
                         <TextBlock Text="{Binding Name}"
-                                    FontSize="13" FontWeight="SemiBold"
-                                    Foreground="{DynamicResource TextPrimaryBrush}"
-                                    TextTrimming="CharacterEllipsis" />
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
                         <TextBlock Text="{Binding FileName}"
-                                    FontSize="10"
-                                    Foreground="{DynamicResource TextMutedBrush}"
-                                    TextTrimming="CharacterEllipsis" />
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" />
                       </StackPanel>
                       <ToggleSwitch Grid.Column="1"
                                     IsChecked="{Binding Enabled}"
@@ -75,44 +147,117 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <!-- Shader packs tab -->
+            <ItemsControl ItemsSource="{Binding InstalledShaderPacks}"
+                          IsVisible="{Binding SelectedTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=2}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:ModInfo}">
+                  <Border Background="{DynamicResource BgSecondaryBrush}"
+                          CornerRadius="8" Padding="10"
+                          Margin="0,3">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding FileName}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1"
+                                    IsChecked="{Binding Enabled}"
+                                    VerticalAlignment="Center"
+                                    IsCheckedChanged="ToggleSwitch_IsCheckedChanged" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            </StackPanel>
           </ScrollViewer>
+
+          <!-- Iris banner for shader tab -->
+          <Border Grid.Row="2"
+                  Background="#1A5865F2"
+                  CornerRadius="8" Padding="10"
+                  Margin="0,8,0,0"
+                  IsVisible="{Binding SelectedTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=2}">
+            <StackPanel Spacing="6"
+                        IsVisible="{Binding IsIrisInstalled, Converter={StaticResource InverseBool}}">
+              <TextBlock Text="Iris Shaders"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="{Binding Localization[modmng.iris.required]}"
+                         FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+              <Button Command="{Binding InstallIrisCommand}"
+                      Classes="primary"
+                      Height="32" Padding="12 0"
+                      FontSize="12"
+                      HorizontalAlignment="Left"
+                      IsVisible="{Binding IsInstallingIris, Converter={StaticResource InverseBool}}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="⬇" FontSize="12" />
+                  <TextBlock Text="{Binding Localization[modmng.iris.install]}" />
+                </StackPanel>
+              </Button>
+              <ProgressBar IsIndeterminate="True"
+                           Height="3"
+                           IsVisible="{Binding IsInstallingIris}" />
+            </StackPanel>
+          </Border>
         </Grid>
       </Border>
 
       <!-- Right: Search panel -->
       <Border Classes="card" Padding="12" Margin="6,0,0,0" Grid.Column="1">
-        <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,*">
+          <!-- Source toggle: Modrinth / CurseForge -->
+          <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}"
+                  CornerRadius="6" Padding="8,6" Margin="0,0,0,8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Text="Modrinth" FontSize="12" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsCurseForgeSource}"
+                            HorizontalAlignment="Center"
+                            Margin="8,0" />
+              <TextBlock Grid.Column="2" Text="CurseForge" FontSize="12" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Grid>
+          </Border>
+
           <!-- Search bar -->
-          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
             <TextBox Text="{Binding SearchQuery}"
                      Watermark="{Binding Localization[modmng.searchPlaceholder]}"
-                     Height="34" FontSize="13" />
+                     Height="34" FontSize="13"
+                     KeyDown="TextBox_KeyDown" />
             <Button Command="{Binding SearchCommand}"
                     Grid.Column="1"
                     Classes="primary"
                     Height="34"
                     Padding="12 0"
                     Margin="8,0,0,0"
-                    FontSize="12">
-              <StackPanel Orientation="Horizontal" Spacing="4">
-                <TextBlock Text="🔎" FontSize="12" />
-                <TextBlock Text="{Binding Localization[modmng.search]}" />
-              </StackPanel>
-            </Button>
+                    FontSize="12"
+                    Content="{Binding SearchButtonText}" />
           </Grid>
 
           <!-- Search status -->
           <TextBlock Text="{Binding SearchStatus}"
-                     Grid.Row="1"
+                     Grid.Row="2"
                      FontSize="11"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      Margin="4,0,0,8" />
 
           <!-- Search results -->
-          <ScrollViewer Grid.Row="2">
+          <ScrollViewer Grid.Row="3">
             <ItemsControl ItemsSource="{Binding SearchResults}">
               <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="{x:Type models:ModrinthHit}">
+                <DataTemplate DataType="{x:Type models:ModSearchResult}">
                   <Border Background="{DynamicResource BgSecondaryBrush}"
                           CornerRadius="8" Padding="10"
                           Margin="0,3">
@@ -127,9 +272,9 @@
                       </Border>
                       <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Title}"
-                                     FontSize="13" FontWeight="SemiBold"
-                                     Foreground="{DynamicResource TextPrimaryBrush}"
-                                     TextTrimming="CharacterEllipsis" />
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
                         <TextBlock Text="{Binding Description}"
                                    FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
@@ -154,19 +299,6 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
-
-          <!-- Install all button (when something is selected) -->
-          <Button Grid.Row="3"
-                  Classes="primary"
-                  Margin="0,8,0,0"
-                  Height="36"
-                  FontSize="13"
-                  IsVisible="False">
-            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-              <TextBlock Text="⬇" FontSize="14" />
-              <TextBlock Text="Tümünü Yükle" />
-            </StackPanel>
-          </Button>
         </Grid>
       </Border>
     </Grid>

@@ -5,6 +5,14 @@ publish/
 *.pdb
 *.user
 *.suo
+*.userosscache
+*.DotSettings
 .vs/
+.idea/
+*.swp
+*.swo
+*.bak
+*.[Cc]ache
 .DS_Store
 Thumbs.db
+*.log

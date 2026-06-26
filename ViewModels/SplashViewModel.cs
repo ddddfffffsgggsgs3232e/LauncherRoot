@@ -1,18 +1,23 @@
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using LauncherRoot.Services;
 
 namespace LauncherRoot.ViewModels;
 
 public partial class SplashViewModel : ViewModelBase
 {
     private readonly MainWindowViewModel _main;
+    private readonly ILocalizationService _localization;
 
     [ObservableProperty]
     private double _opacity;
 
-    public SplashViewModel(MainWindowViewModel main)
+    public ILocalizationService Localization => _localization;
+
+    public SplashViewModel(MainWindowViewModel main, ILocalizationService localization)
     {
         _main = main;
+        _localization = localization;
         _ = AnimateAsync();
     }
 

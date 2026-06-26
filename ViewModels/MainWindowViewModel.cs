@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using LauncherRoot.Models;
 using LauncherRoot.Services;
 
@@ -26,6 +27,12 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IThemeService _themeService;
     private readonly ILocalizationService _localization;
     private readonly IInstanceService _instances;
+    private readonly IUpdateService _updater;
+    private readonly IInstallService _installer;
+    private readonly ICurseForgeService _curseforge;
+    private readonly IBackupService _backups;
+
+    private int _navigationStack;
 
     [ObservableProperty]
     private object? _currentViewModel;
@@ -45,7 +52,11 @@ public partial class MainWindowViewModel : ViewModelBase
         IMinecraftService minecraft,
         IThemeService themeService,
         ILocalizationService localization,
-        IInstanceService instances)
+        IInstanceService instances,
+        IUpdateService updater,
+        IInstallService installer,
+        ICurseForgeService curseforge,
+        IBackupService backups)
     {
         _config = config;
         _modrinth = modrinth;
@@ -53,6 +64,10 @@ public partial class MainWindowViewModel : ViewModelBase
         _themeService = themeService;
         _localization = localization;
         _instances = instances;
+        _updater = updater;
+        _installer = installer;
+        _curseforge = curseforge;
+        _backups = backups;
 
         _localization.PropertyChanged += OnLocalizationChanged;
 
@@ -69,14 +84,38 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task InitializeAsync()
     {
-        var player = await _config.LoadPlayerAsync();
-        if (string.IsNullOrWhiteSpace(player.Username))
+        await _installer.InstallAsync();
+
+        var cfg = await _config.LoadConfigAsync();
+
+        if (!string.IsNullOrEmpty(Program.LaunchInstanceId))
         {
-            NavigateTo(PageType.PlayerSetup);
-            return;
+            var instance = await _instances.GetInstanceAsync(Program.LaunchInstanceId);
+            if (instance != null)
+            {
+                cfg.SelectedInstanceId = instance.Id;
+                if (!string.IsNullOrEmpty(Program.LaunchPlayerName))
+                {
+                    var accounts = await _config.LoadAccountsAsync();
+                    var player = accounts.Find(a => a.Username == Program.LaunchPlayerName);
+                    if (player != null)
+                        await _config.SwitchAccountAsync(player.Id);
+                }
+                NavigateTo(PageType.MainMenu);
+                return;
+            }
         }
 
-        NavigateTo(PageType.MainMenu);
+        var hasPlayer = !string.IsNullOrEmpty(cfg.ActiveAccountId) || (await _config.LoadAccountsAsync()).Count > 0;
+        NavigateTo(hasPlayer ? PageType.MainMenu : PageType.PlayerSetup);
+    }
+
+    private void SwitchViewModel(object? vm)
+    {
+        if (CurrentViewModel is IDisposable old)
+            old.Dispose();
+        CurrentViewModel = vm;
+        _navigationStack++;
     }
 
     public void NavigateTo(PageType page)
@@ -86,25 +125,25 @@ public partial class MainWindowViewModel : ViewModelBase
         switch (page)
         {
             case PageType.PlayerSetup:
-                CurrentViewModel = new PlayerSetupViewModel(_config, this, _localization);
+                SwitchViewModel(new PlayerSetupViewModel(_config, this, _localization));
                 break;
             case PageType.ThemeSelection:
-                CurrentViewModel = new ThemeSelectionViewModel(_config, _modrinth, this, _localization);
+                SwitchViewModel(new ThemeSelectionViewModel(_config, _modrinth, this, _localization, _instances, _themeService));
                 break;
             case PageType.Splash:
-                CurrentViewModel = new SplashViewModel(this);
+                SwitchViewModel(new SplashViewModel(this, _localization));
                 break;
             case PageType.MainMenu:
-                CurrentViewModel = new MainMenuViewModel(_config, _modrinth, _minecraft, this, _localization, _instances);
+                SwitchViewModel(new MainMenuViewModel(_config, _modrinth, _minecraft, this, _localization, _instances, _curseforge, _backups));
                 break;
             case PageType.ModManagement:
                 _ = NavigateToModManagementAsync();
                 return;
             case PageType.Settings:
-                CurrentViewModel = new SettingsViewModel(_config, this, _localization);
+                SwitchViewModel(new SettingsViewModel(_config, this, _localization, _updater, _installer));
                 break;
             case PageType.InstanceCreate:
-                CurrentViewModel = new InstanceCreateViewModel(_config, _minecraft, _instances, this, _localization);
+                SwitchViewModel(new InstanceCreateViewModel(_config, _minecraft, _instances, this, _localization));
                 break;
             case PageType.InstanceEdit:
                 _ = NavigateToInstanceEditAsync();
@@ -114,36 +153,57 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task NavigateToModManagementAsync()
     {
-        var cfg = await _config.LoadConfigAsync();
-        if (string.IsNullOrEmpty(cfg.SelectedInstanceId))
-        {
-            NavigateTo(PageType.MainMenu);
-            return;
-        }
-
-        var instance = await _instances.GetInstanceAsync(cfg.SelectedInstanceId);
-        if (instance == null)
-        {
-            NavigateTo(PageType.MainMenu);
-            return;
-        }
-
         Navigating?.Invoke();
-        CurrentViewModel = new ModManagementViewModel(
-            _config, _modrinth, _instances, instance, this, _localization);
+        var cfg = await _config.LoadConfigAsync();
+        if (cfg.SelectedInstanceId == null) return;
+        var instance = await _instances.GetInstanceAsync(cfg.SelectedInstanceId);
+        if (instance == null) return;
+        SwitchViewModel(new ModManagementViewModel(
+            _config, _modrinth, _curseforge, _instances, instance, this, _localization));
     }
 
-    private Task NavigateToInstanceEditAsync()
+    private async Task NavigateToInstanceEditAsync()
     {
-        var instance = EditingInstance;
-        if (instance == null)
+        if (EditingInstance == null) return;
+        Navigating?.Invoke();
+        SwitchViewModel(new InstanceCreateViewModel(_config, _minecraft, _instances, this, _localization, EditingInstance));
+    }
+
+    [RelayCommand]
+    private void GoBack()
+    {
+        if (_navigationStack > 0)
         {
             NavigateTo(PageType.MainMenu);
-            return Task.CompletedTask;
         }
+    }
 
-        Navigating?.Invoke();
-        CurrentViewModel = new InstanceCreateViewModel(_config, _minecraft, _instances, this, _localization, instance);
-        return Task.CompletedTask;
+    [RelayCommand]
+    private void CloseWindow()
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.MainWindow?.Close();
+        }
+    }
+
+    [RelayCommand]
+    private void Refresh()
+    {
+        if (CurrentViewModel is INotifyPropertyChanged)
+        {
+            var current = CurrentViewModel;
+            var page = current switch
+            {
+                MainMenuViewModel => PageType.MainMenu,
+                ModManagementViewModel => PageType.ModManagement,
+                SettingsViewModel => PageType.Settings,
+                PlayerSetupViewModel => PageType.PlayerSetup,
+                InstanceCreateViewModel => PageType.InstanceCreate,
+                ThemeSelectionViewModel => PageType.ThemeSelection,
+                _ => PageType.MainMenu,
+            };
+            NavigateTo(page);
+        }
     }
 }

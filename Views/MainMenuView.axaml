@@ -3,17 +3,159 @@
              xmlns:vm="clr-namespace:LauncherRoot.ViewModels"
              xmlns:models="clr-namespace:LauncherRoot.Models"
              x:Class="LauncherRoot.Views.MainMenuView">
-  <Grid ColumnDefinitions="220,*" RowDefinitions="*,Auto">
-    <!-- LEFT SIDEBAR -->
+  <Grid ColumnDefinitions="200,*,200" RowDefinitions="*,Auto">
+    <!-- LEFT SIDEBAR: Action buttons -->
     <Border Grid.Column="0" Grid.RowSpan="2"
             Background="{DynamicResource BgSidebarBrush}"
             BorderThickness="0,0,1,0"
             BorderBrush="{DynamicResource BorderBrush}">
-      <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
-        <!-- Sidebar header -->
+      <Grid RowDefinitions="Auto,*,Auto">
         <Border Grid.Row="0" Padding="16,20,16,12">
           <StackPanel Spacing="4">
-            <TextBlock Text="📂" FontSize="20" HorizontalAlignment="Center" />
+            <Border Height="3" Width="40"
+                    Background="{DynamicResource AccentBrush}"
+                    HorizontalAlignment="Center"
+                    CornerRadius="2"
+                    Margin="0,0,0,8" />
+            <TextBlock Text="{Binding Localization[menu.actions]}"
+                       FontSize="15" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <Border Height="1" Background="{DynamicResource BorderBrush}"
+                    Margin="20,8,20,0" />
+          </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Margin="8,0">
+          <StackPanel Spacing="2"
+                      IsVisible="{Binding HasInstances}">
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding EditInstanceCommand}"
+                    CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="✏︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[instance.edit]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding SetInstanceGroupCommand}"
+                    CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="📁︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[group.set]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+            <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="14,4" />
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding BackupNowCommand}"
+                    CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="💾︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[backup.now]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding ShowBackupsCommand}"
+                    CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="📦︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[backup.show]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+            <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="14,4" />
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding ExportInstanceCommand}"
+                    CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="📤︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[menu.export]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding ImportInstanceCommand}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="📥︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[menu.import]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding DuplicateInstanceCommand}"
+                    CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="📋︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[menu.duplicate]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+            <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="14,4" />
+            <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                    Command="{Binding DeleteInstanceCommand}"
+                    CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="🗑︎" FontSize="12" Width="18" />
+                <TextBlock Text="{Binding Localization[instance.delete]}" FontSize="12" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Margin="8,0,8,12" Spacing="2">
+          <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="14,4" />
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenLogViewerCommand}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📟︎" FontSize="12" Width="18" />
+              <TextBlock Text="{Binding Localization[menu.console]}" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenLogsFolderCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📋︎" FontSize="12" Width="18" />
+              <TextBlock Text="{Binding Localization[menu.openlogs]}" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenInstanceFolderCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📂︎" FontSize="12" Width="18" />
+              <TextBlock Text="{Binding Localization[menu.openfolder]}" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenScreenshotsFolderCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📸︎" FontSize="12" Width="18" />
+              <TextBlock Text="{Binding Localization[menu.screenshots]}" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
+                  Command="{Binding OpenScreenshotGalleryCommand}"
+                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🖼︎" FontSize="12" Width="18" />
+              <TextBlock Text="{Binding Localization[menu.gallery]}" FontSize="12" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- RIGHT SIDEBAR: Profiles / Instance list -->
+    <Border Grid.Column="2" Grid.RowSpan="2"
+            Background="{DynamicResource BgSidebarBrush}"
+            BorderThickness="1,0,0,0"
+            BorderBrush="{DynamicResource BorderBrush}">
+      <Grid RowDefinitions="Auto,Auto,*">
+        <Border Grid.Row="0" Padding="16,20,16,12">
+          <StackPanel Spacing="4">
+            <Border Height="3" Width="40"
+                    Background="{DynamicResource AccentBrush}"
+                    HorizontalAlignment="Center"
+                    CornerRadius="2"
+                    Margin="0,0,0,8" />
             <TextBlock Text="{Binding Localization[menu.instances]}"
                        FontSize="15" FontWeight="Bold"
                        HorizontalAlignment="Center"
@@ -23,46 +165,62 @@
           </StackPanel>
         </Border>
 
-        <!-- Add Instance button (above list so it's always visible) -->
         <Border Grid.Row="1" Padding="12,0,12,6">
           <Button Command="{Binding AddInstanceCommand}"
                   Classes="secondary"
                   Height="38"
                   HorizontalAlignment="Stretch">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <TextBlock Text="+" FontSize="16" FontWeight="Bold" />
+              <TextBlock Text="+" FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource AccentBrush}" />
               <TextBlock Text="{Binding Localization[menu.newinstance]}" FontSize="13" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </Border>
 
-        <!-- Instance list -->
-        <ScrollViewer Grid.Row="2" Margin="10,0">
-          <ItemsControl ItemsSource="{Binding InstanceList}">
+        <ScrollViewer Grid.Row="2" Margin="10,0,10,10">
+          <ItemsControl ItemsSource="{Binding GroupedInstanceList}">
             <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="{x:Type models:Instance}">
-                <Grid Margin="0,2" Classes="instanceRow">
+              <DataTemplate DataType="{x:Type models:InstanceGroupItem}">
+                <Grid Margin="0,2">
+                  <Border IsVisible="{Binding IsGroup}"
+                          Padding="4,6,4,2"
+                          Background="Transparent">
+                    <Grid>
+                      <Border Height="1" Background="{DynamicResource BorderBrush}"
+                              VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding GroupName}"
+                                 FontSize="10" FontWeight="Bold"
+                                 Foreground="{DynamicResource TextMutedBrush}"
+                                 Margin="14,0,0,0"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+                  </Border>
+
                   <Button Classes="instanceBtn"
+                          IsVisible="{Binding IsGroup, Converter={StaticResource InverseBool}}"
                           Command="{Binding DataContext.SelectInstanceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                          CommandParameter="{Binding}">
+                          CommandParameter="{Binding Instance}">
                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2">
                       <Border Width="30" Height="30" CornerRadius="6"
                               Background="{DynamicResource BgCardBrush}"
-                              VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Icon}"
+                              VerticalAlignment="Center"
+                              BorderBrush="{DynamicResource BorderBrush}"
+                              BorderThickness="1">
+                        <TextBlock Text="{Binding Instance.Icon}"
                                    FontSize="14"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding DisplayName}"
-                                    FontSize="12" FontWeight="SemiBold"
-                                    Foreground="{DynamicResource TextPrimaryBrush}"
-                                    TextTrimming="CharacterEllipsis" />
-                        <TextBlock Text="{Binding LoaderLabel}"
-                                    FontSize="10"
-                                    Foreground="{DynamicResource TextMutedBrush}"
-                                    TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Instance.DisplayName}"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Instance.LoaderLabel}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" />
                       </StackPanel>
                     </Grid>
                   </Button>
@@ -71,80 +229,14 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </ScrollViewer>
-
-        <!-- Separator -->
-        <Border Grid.Row="3" Height="1" Background="{DynamicResource BorderBrush}"
-                Margin="14,4,14,4"
-                IsVisible="{Binding HasInstances}" />
-
-        <!-- Instance action buttons -->
-        <StackPanel Grid.Row="4" Margin="10,2,10,12" Spacing="2"
-                    IsVisible="{Binding HasInstances}">
-          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
-                  Command="{Binding EditInstanceCommand}"
-                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="✏️" FontSize="12" Width="18" />
-              <TextBlock Text="{Binding Localization[instance.edit]}" FontSize="12" />
-            </StackPanel>
-          </Button>
-          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
-                  Command="{Binding DeleteInstanceCommand}"
-                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="🗑️" FontSize="12" Width="18" />
-              <TextBlock Text="{Binding Localization[instance.delete]}" FontSize="12" />
-            </StackPanel>
-          </Button>
-          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
-                  Command="{Binding OpenLogsFolderCommand}"
-                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="📋" FontSize="12" Width="18" />
-              <TextBlock Text="Log klasörü" FontSize="12" />
-            </StackPanel>
-          </Button>
-          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
-                  Command="{Binding OpenInstanceFolderCommand}"
-                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="📂" FontSize="12" Width="18" />
-              <TextBlock Text="Oyun klasörünü aç" FontSize="12" />
-            </StackPanel>
-          </Button>
-          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
-                  Command="{Binding OpenScreenshotsFolderCommand}"
-                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="📸" FontSize="12" Width="18" />
-              <TextBlock Text="Ekran görüntüleri" FontSize="12" />
-            </StackPanel>
-          </Button>
-          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
-                  Command="{Binding OpenLogViewerCommand}" Cursor="Hand">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="📟" FontSize="12" Width="18" />
-              <TextBlock Text="Konsol" FontSize="12" />
-            </StackPanel>
-          </Button>
-          <Button Classes="ghost" Padding="10,7" HorizontalAlignment="Stretch"
-                  Command="{Binding DuplicateInstanceCommand}"
-                  CommandParameter="{Binding SelectedInstance}" Cursor="Hand">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="📋" FontSize="12" Width="18" />
-              <TextBlock Text="Çoğalt" FontSize="12" />
-            </StackPanel>
-          </Button>
-        </StackPanel>
       </Grid>
     </Border>
 
     <!-- MAIN CONTENT -->
     <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto"
-          Background="{Binding BackgroundBrush}">
+          Background="{DynamicResource BgSecondaryBrush}">
       <!-- Top bar -->
       <Grid Grid.Row="0" Margin="20,16,20,0">
-        <!-- User greeting -->
         <Button Command="{Binding OpenPlayerSetupCommand}"
                 Classes="ghost"
                 Padding="8"
@@ -154,46 +246,40 @@
             <Border Width="36" Height="36" CornerRadius="18"
                     Background="{DynamicResource AccentBrush}">
               <TextBlock Text="{Binding PlayerInitial, FallbackValue='?'}" FontSize="16" FontWeight="Bold"
-                         Foreground="White"
+                         Foreground="#052E16"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center" />
             </Border>
             <StackPanel VerticalAlignment="Center">
-              <TextBlock Text="{Binding PlayerUsername, FallbackValue='Oyuncu'}"
-                          FontSize="15" FontWeight="SemiBold"
-                          Foreground="{DynamicResource TextPrimaryBrush}"
-                          TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="Hoş geldin!"
+              <TextBlock Text="{Binding PlayerUsername, FallbackValue={Binding Localization[menu.player]}}"
+                         FontSize="15" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Localization[menu.welcomeback]}"
                          FontSize="11"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
           </StackPanel>
         </Button>
 
-        <!-- Settings button -->
-        <Button Command="{Binding OpenSettingsCommand}"
+          <Button Command="{Binding OpenSettingsCommand}"
                 Classes="ghost"
                 HorizontalAlignment="Right"
                 Width="40" Height="40"
                 HorizontalContentAlignment="Center"
                 VerticalContentAlignment="Center">
-          <TextBlock Text="⚙" FontSize="20" />
-        </Button>
+            <TextBlock Text="⚙︎" FontSize="20" />
+          </Button>
       </Grid>
 
       <!-- Center content -->
       <StackPanel Grid.Row="1"
                   VerticalAlignment="Center" HorizontalAlignment="Center"
                   Spacing="16">
-        <TextBlock Text="🎮"
-                   FontSize="48"
-                   HorizontalAlignment="Center"
-                   Opacity="0.4" />
         <TextBlock Text="LauncherRoot"
                    Classes="h1"
                    HorizontalAlignment="Center" />
 
-        <!-- Selected instance badge -->
         <Border Classes="card"
                 Padding="24,16"
                 IsVisible="{Binding HasInstances}">
@@ -211,16 +297,20 @@
                        FontSize="13"
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding SelectedInstance.PlayTimeLabel, FallbackValue=''}"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       IsVisible="{Binding HasInstances}" />
           </StackPanel>
         </Border>
 
-        <!-- No instance message -->
         <Border Background="{DynamicResource BgCardBrush}"
                 CornerRadius="12" Padding="24,16"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1"
                 IsVisible="{Binding HasInstances, Converter={StaticResource InverseBool}}">
-          <TextBlock Text="Henüz bir instance yok. Yeni bir instance oluştur!"
+          <TextBlock Text="{Binding Localization[menu.noinstances]}"
                      FontSize="14"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      HorizontalAlignment="Center" />
@@ -238,7 +328,7 @@
                 FontSize="20"
                 FontWeight="Bold">
           <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-            <TextBlock Text="▶" FontSize="22" VerticalAlignment="Center" />
+            <TextBlock Text="▸" FontSize="24" VerticalAlignment="Center" />
             <TextBlock Text="{Binding Localization[menu.play]}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -250,7 +340,7 @@
                 FontSize="15"
                 Margin="12,0,0,0">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" />
+            <TextBlock Text="◇" FontSize="16" VerticalAlignment="Center" />
             <TextBlock Text="{Binding Localization[menu.modmanagement]}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
@@ -258,7 +348,7 @@
     </Grid>
 
     <!-- STATUS BAR -->
-    <Border Grid.ColumnSpan="2" Grid.Row="1"
+    <Border Grid.ColumnSpan="3" Grid.Row="1"
             Background="{DynamicResource BgCardBrush}"
             BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource BorderBrush}"
@@ -270,8 +360,101 @@
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center" />
         <ProgressBar Value="{Binding StatusProgress}"
-                     Minimum="0" Maximum="1" />
+                     Minimum="0" Maximum="1"
+                     IsVisible="{Binding HasError, Converter={StaticResource InverseBool}}" />
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="8"
+                    IsVisible="{Binding HasError}">
+          <Button Command="{Binding CopyErrorCommand}"
+                  Classes="secondary" Height="28" FontSize="12"
+                  Padding="10 0">
+            <TextBlock Text="{Binding Localization[menu.copyerror]}" />
+          </Button>
+          <Button Command="{Binding DismissErrorCommand}"
+                  Classes="ghost" Height="28" FontSize="12"
+                  Padding="10 0">
+            <TextBlock Text="{Binding Localization[menu.dismiss]}" />
+          </Button>
+        </StackPanel>
       </StackPanel>
+    </Border>
+
+    <!-- BACKUP PANEL OVERLAY -->
+    <Border Grid.ColumnSpan="3" Grid.RowSpan="2"
+            Background="#00000080"
+            IsVisible="{Binding ShowBackupPanel}"
+            ZIndex="100">
+      <Border Background="{DynamicResource BgCardBrush}"
+              CornerRadius="12"
+              Width="360"
+              MaxHeight="400"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              Padding="20">
+        <StackPanel Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Localization[backup.title]}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+
+          <Border Height="1" Background="{DynamicResource BorderBrush}" />
+
+          <ScrollViewer MaxHeight="260">
+            <ItemsControl ItemsSource="{Binding AvailableBackups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:BackupInfo}">
+                  <Border Background="{DynamicResource BgSecondaryBrush}"
+                          CornerRadius="8" Padding="10"
+                          Margin="0,3">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                      <StackPanel>
+                        <TextBlock Text="{Binding FileName}"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding CreatedAt}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                      </StackPanel>
+                      <Button Grid.Column="1"
+                              Command="{Binding DataContext.RestoreBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                              CommandParameter="{Binding}"
+                              Classes="secondary"
+                              Height="28" Padding="8 0"
+                              FontSize="11"
+                              Margin="0,0,4,0"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding DataContext.Localization[backup.restore], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                      </Button>
+                      <Button Grid.Column="2"
+                              Command="{Binding DataContext.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                              CommandParameter="{Binding}"
+                              Classes="ghost"
+                              Height="28" Width="28"
+                              FontSize="12"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="✕" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <Border Height="1" Background="{DynamicResource BorderBrush}" />
+
+          <Button Command="{Binding HideBackupsCommand}"
+                  Classes="secondary"
+                  Height="34"
+                  HorizontalAlignment="Stretch">
+            <TextBlock Text="{Binding Localization[menu.close]}" />
+          </Button>
+        </StackPanel>
+      </Border>
     </Border>
   </Grid>
 </UserControl>

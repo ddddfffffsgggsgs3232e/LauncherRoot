@@ -1,6 +1,8 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LauncherRoot.Models;
@@ -8,7 +10,7 @@ using LauncherRoot.Services;
 
 namespace LauncherRoot.ViewModels;
 
-public partial class PlayerSetupViewModel : ViewModelBase
+public partial class PlayerSetupViewModel : ViewModelBase, IDisposable
 {
     private readonly ConfigService _config;
     private readonly MainWindowViewModel _main;
@@ -53,6 +55,12 @@ public partial class PlayerSetupViewModel : ViewModelBase
         _ = LoadAsync();
     }
 
+    public void Dispose()
+    {
+        _microsoftAuth?.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
     private async Task LoadAsync()
     {
         var allAccounts = await _config.LoadAccountsAsync();
@@ -82,7 +90,7 @@ public partial class PlayerSetupViewModel : ViewModelBase
         var trimmed = Username.Trim();
         if (Accounts.Any(a => a.Username == trimmed))
         {
-            ErrorMessage = "Bu kullanıcı adı zaten kayıtlı.";
+            ErrorMessage = _localization["error.duplicate_user"];
             return;
         }
 
@@ -103,27 +111,37 @@ public partial class PlayerSetupViewModel : ViewModelBase
         ErrorMessage = "";
         ShowMicrosoftCode = false;
 
+        var cfg = await _config.LoadConfigAsync();
+        if (!string.IsNullOrWhiteSpace(cfg.MicrosoftClientId))
+            _microsoftAuth.SetClientId(cfg.MicrosoftClientId);
+
         var result = await _microsoftAuth.StartDeviceFlowAsync(
             showCodeCallback: (code, url) =>
             {
-                MicrosoftCode = code;
-                MicrosoftUrl = url;
-                ShowMicrosoftCode = true;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    MicrosoftCode = code;
+                    MicrosoftUrl = url;
+                    ShowMicrosoftCode = true;
+                });
                 return Task.CompletedTask;
             },
-            updateStatusCallback: (status) =>
+            updateStatusCallback: (statusKey) =>
             {
-                MicrosoftStatus = status;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    MicrosoftStatus = _localization[statusKey];
+                });
                 return Task.CompletedTask;
             });
 
         IsMicrosoftLoggingIn = false;
 
-        if (result != null)
+        if (result.Success)
         {
             if (Accounts.Any(a => a.Username == result.Username))
             {
-                ErrorMessage = $"\"{result.Username}\" kullanıcı adı zaten kayıtlı.";
+                ErrorMessage = $"{_localization["error.duplicate_user"]}: {result.Username}";
                 return;
             }
 
@@ -142,7 +160,7 @@ public partial class PlayerSetupViewModel : ViewModelBase
         else
         {
             ShowMicrosoftCode = false;
-            ErrorMessage = "Microsoft girişi başarısız. Lütfen tekrar deneyin.";
+            ErrorMessage = result.ErrorMessage ?? _localization["error.microsoft_failed"];
         }
     }
 

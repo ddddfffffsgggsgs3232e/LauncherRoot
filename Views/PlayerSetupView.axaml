@@ -5,12 +5,14 @@
              x:Class="LauncherRoot.Views.PlayerSetupView">
   <Grid ColumnDefinitions="280,*" HorizontalAlignment="Center" VerticalAlignment="Center"
         Margin="40">
-    <!-- LEFT: Saved accounts -->
+    <!-- LEFT: Saved accounts sidebar -->
     <Border Background="{DynamicResource BgSidebarBrush}"
-            CornerRadius="12" Padding="16">
+            CornerRadius="12" Padding="16"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
       <StackPanel Spacing="12">
-        <TextBlock Text="📂" FontSize="24" HorizontalAlignment="Center" />
-        <TextBlock Text="Kayılı Hesaplar"
+        <TextBlock FontSize="24" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource AccentBrush}"></TextBlock>
+        <TextBlock Text="{Binding Localization[player.accounts]}"
                    FontSize="14" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    HorizontalAlignment="Center" />
@@ -36,15 +38,14 @@
                     <Button Grid.Column="1" Classes="ghost" Padding="4"
                             Command="{Binding DataContext.DeleteAccountCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             CommandParameter="{Binding}">
-                      <TextBlock Text="🗑️" FontSize="12" />
-                    </Button>
+                      </Button>
                   </Grid>
                 </Border>
               </Button>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <TextBlock Text="Bir hesaba tıkla doğrudan giriş yap"
+        <TextBlock Text="{Binding Localization[player.clicktojoin]}"
                    FontSize="11"
                    Foreground="{DynamicResource TextMutedBrush}"
                    HorizontalAlignment="Center" />
@@ -54,19 +55,24 @@
     <!-- RIGHT: Login area -->
     <ScrollViewer Grid.Column="1">
       <StackPanel Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40,0">
-        <TextBlock Text="🎮" FontSize="36" HorizontalAlignment="Center" Opacity="0.5" />
+        <TextBlock Text="👤︎" FontSize="36" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource AccentBrush}" />
+        <TextBlock Text="◆" FontSize="28" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource AccentBrush}" />
         <TextBlock Text="LauncherRoot" FontSize="36" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Localization[player.welcome]}"
                    Classes="h3" HorizontalAlignment="Center" Margin="0,0,0,12" />
 
-        <!-- Offline mode -->
+        <!-- Offline mode card -->
         <Border Classes="card" Padding="24" Width="360">
           <StackPanel Spacing="14">
-            <TextBlock Text="Çevrimdışı Mod"
-                       FontSize="15" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <TextBlock Text="{Binding Localization[player.offline]}"
+                         FontSize="15" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
 
             <TextBox Text="{Binding Username}"
                      Watermark="{Binding Localization[player.placeholder]}"
@@ -74,10 +80,10 @@
                      HorizontalContentAlignment="Center" />
 
             <TextBlock Text="{Binding ErrorMessage}"
-                        Foreground="{DynamicResource ErrorBrush}"
-                        FontSize="12"
-                        HorizontalAlignment="Center"
-                        TextWrapping="Wrap" />
+                       Foreground="{DynamicResource ErrorBrush}"
+                       FontSize="12"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" />
 
             <Button Command="{Binding ContinueCommand}"
                     Classes="secondary"
@@ -85,7 +91,6 @@
                     FontSize="15"
                     HorizontalAlignment="Center">
               <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                <TextBlock Text="➜" FontSize="16" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Localization[player.continue]}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -96,7 +101,7 @@
         <Grid ColumnDefinitions="Auto,*,Auto" Width="200">
           <Border VerticalAlignment="Center" Height="1"
                   Background="{DynamicResource BorderBrush}" />
-          <TextBlock Grid.Column="1" Text="veya"
+          <TextBlock Grid.Column="1" Text="{Binding Localization[player.or]}"
                      FontSize="13"
                      Foreground="{DynamicResource TextMutedBrush}"
                      HorizontalAlignment="Center"
@@ -105,17 +110,16 @@
                   Background="{DynamicResource BorderBrush}" />
         </Grid>
 
-        <!-- Microsoft login -->
+        <!-- Microsoft login card -->
         <Border Classes="card" Padding="24" Width="360">
           <StackPanel Spacing="14">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <TextBlock Text="☁️" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="Microsoft Hesabı"
+              <TextBlock Text="{Binding Localization[player.microsoft]}"
                          FontSize="15" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
-            <TextBlock Text="Gerçek Minecraft profilinle oyna"
+            <TextBlock Text="{Binding Localization[player.microsoftdesc]}"
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
@@ -126,11 +130,11 @@
                     IsVisible="{Binding ShowMicrosoftCode}">
               <StackPanel Spacing="12" HorizontalAlignment="Center">
                 <TextBlock Text="{Binding MicrosoftStatus}"
-                                FontSize="13"
-                                Foreground="{DynamicResource TextSecondaryBrush}"
-                                HorizontalAlignment="Center"
-                                TextWrapping="Wrap" />
-                <TextBlock Text="Kodunuz:"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Localization[microsoft.yourcode]}"
                            FontSize="12"
                            Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Center" />
@@ -148,17 +152,17 @@
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap"
                            HorizontalAlignment="Center">
-                  <Run Text="Şu adresi ziyaret et:" />
+                  <Run Text="{Binding Localization[microsoft.visit]}" />
                   <LineBreak />
-                  <Run Text="{Binding MicrosoftUrl}" FontWeight="Bold" />
+                  <Run Text="{Binding MicrosoftUrl}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
                   <LineBreak />
-                  <Run Text="ve yukarıdaki kodu gir." />
+                  <Run Text="{Binding Localization[microsoft.entercode]}" />
                 </TextBlock>
                 <Button Command="{Binding CancelMicrosoftCommand}"
                         Classes="ghost"
                         HorizontalAlignment="Center"
                         FontSize="12">
-                  <TextBlock Text="İptal" />
+                  <TextBlock Text="{Binding Localization[microsoft.cancel]}" />
                 </Button>
               </StackPanel>
             </Border>
@@ -170,12 +174,11 @@
                     IsVisible="{Binding ShowMicrosoftCode, Converter={StaticResource InverseBool}}"
                     IsEnabled="{Binding IsMicrosoftLoggingIn, Converter={StaticResource InverseBool}}">
               <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                <TextBlock Text="☁️" FontSize="16" VerticalAlignment="Center" />
-                <TextBlock Text="Microsoft ile Giriş Yap" FontSize="15" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Localization[microsoft.login]}" FontSize="15" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
 
-            <TextBlock Text="Microsoft hesabınla giriş yaparak gerçek Minecraft skin'ine ve profil resmine erişebilirsin."
+            <TextBlock Text="{Binding Localization[player.microsoftnote]}"
                        FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}"
                        TextWrapping="Wrap"

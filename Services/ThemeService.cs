@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading.Tasks;
 using LauncherRoot.Models;
 
 namespace LauncherRoot.Services;
@@ -107,17 +105,5 @@ public class ThemeService : IThemeService
                 ]
             }
         ];
-    }
-
-    public async Task SaveThemesAsync(List<Theme> themes)
-    {
-        var dir = Path.Combine(_config.RootPath, "themes");
-        Directory.CreateDirectory(dir);
-        foreach (var theme in themes)
-        {
-            var path = Path.Combine(dir, $"{theme.Id}.json");
-            await using var fs = File.Create(path);
-            await JsonSerializer.SerializeAsync(fs, theme, new JsonSerializerOptions { WriteIndented = true });
-        }
     }
 }

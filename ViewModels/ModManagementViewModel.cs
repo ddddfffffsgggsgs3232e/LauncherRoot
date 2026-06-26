@@ -16,17 +16,29 @@ public partial class ModManagementViewModel : ViewModelBase
 {
     private readonly ConfigService _config;
     private readonly IModrinthService _modrinth;
+    private readonly ICurseForgeService _curseforge;
     private readonly IInstanceService _instances;
     private readonly MainWindowViewModel _main;
     private readonly ILocalizationService _localization;
     private readonly Instance _instance;
     private readonly string _modsPath;
+    private readonly string _rpPath;
+    private readonly string _spPath;
+
+    [ObservableProperty]
+    private int _selectedTab;
 
     [ObservableProperty]
     private ObservableCollection<ModInfo> _installedMods = [];
 
     [ObservableProperty]
-    private ObservableCollection<ModrinthHit> _searchResults = [];
+    private ObservableCollection<ModInfo> _installedResourcePacks = [];
+
+    [ObservableProperty]
+    private ObservableCollection<ModInfo> _installedShaderPacks = [];
+
+    [ObservableProperty]
+    private ObservableCollection<ModSearchResult> _searchResults = [];
 
     [ObservableProperty]
     private string _searchQuery = "";
@@ -40,11 +52,37 @@ public partial class ModManagementViewModel : ViewModelBase
     [ObservableProperty]
     private string _instanceName = "";
 
+    [ObservableProperty]
+    private bool _isCheckingUpdates;
+
+    [ObservableProperty]
+    private bool _isIrisInstalled;
+
+    [ObservableProperty]
+    private bool _isInstallingIris;
+
+    [ObservableProperty]
+    private string _searchButtonText = "";
+
+    [ObservableProperty]
+    private bool _isCurseForgeSource;
+
+    [ObservableProperty]
+    private string _sourceLabel = "";
+
     public ILocalizationService Localization => _localization;
+
+    public string CurrentProjectType => SelectedTab switch
+    {
+        1 => "resourcepack",
+        2 => "shader",
+        _ => "mod",
+    };
 
     public ModManagementViewModel(
         ConfigService config,
         IModrinthService modrinth,
+        ICurseForgeService curseforge,
         IInstanceService instances,
         Instance instance,
         MainWindowViewModel main,
@@ -52,14 +90,65 @@ public partial class ModManagementViewModel : ViewModelBase
     {
         _config = config;
         _modrinth = modrinth;
+        _curseforge = curseforge;
         _instances = instances;
         _instance = instance;
         _main = main;
         _localization = localization;
         _modsPath = _instances.GetInstanceModsPath(instance);
+        _rpPath = _instances.GetInstanceResourcepackPath(instance);
+        _spPath = _instances.GetInstanceShaderpackPath(instance);
         InstanceName = instance.DisplayName;
         Directory.CreateDirectory(_modsPath);
+        Directory.CreateDirectory(_rpPath);
+        Directory.CreateDirectory(_spPath);
         _ = LoadInstalledModsAsync();
+        _ = LoadPacksAsync();
+        UpdateSearchButtonText();
+        UpdateSourceLabel();
+    }
+
+    partial void OnSelectedTabChanged(int value)
+    {
+        SearchResults.Clear();
+        SearchStatus = "";
+        SearchQuery = "";
+        OnPropertyChanged(nameof(CurrentProjectType));
+        UpdateSearchButtonText();
+        CheckIrisInstalled();
+    }
+
+    partial void OnIsCurseForgeSourceChanged(bool value)
+    {
+        SearchResults.Clear();
+        SearchQuery = "";
+        SearchStatus = value ? _localization["modmng.cf.warning"] : "";
+        UpdateSourceLabel();
+        UpdateSearchButtonText();
+    }
+
+    private void UpdateSourceLabel()
+    {
+        SourceLabel = IsCurseForgeSource ? "CurseForge" : "Modrinth";
+    }
+
+    private void UpdateSearchButtonText()
+    {
+        SearchButtonText = IsCurseForgeSource
+            ? _localization["modmng.search.cf"]
+            : SelectedTab switch
+            {
+                1 => _localization["modmng.search.rp"],
+                2 => _localization["modmng.search.shader"],
+                _ => _localization["modmng.search.mod"],
+            };
+    }
+
+    private void CheckIrisInstalled()
+    {
+        if (SelectedTab == 2)
+            IsIrisInstalled = InstalledMods.Any(m =>
+                m.Slug.Contains("iris", StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task LoadInstalledModsAsync()
@@ -100,20 +189,82 @@ public partial class ModManagementViewModel : ViewModelBase
         }
 
         InstalledMods = mods;
+        _ = CheckUpdatesAsync();
+        CheckIrisInstalled();
+    }
+
+    private async Task LoadPacksAsync()
+    {
+        var rps = new ObservableCollection<ModInfo>();
+        foreach (var file in Directory.GetFiles(_rpPath, "*.zip"))
+        {
+            var fileName = Path.GetFileName(file);
+            rps.Add(new ModInfo { Slug = fileName, Name = fileName, FileName = fileName, Downloaded = true, Enabled = true });
+        }
+        foreach (var file in Directory.GetFiles(_rpPath, "*.zip.disabled"))
+        {
+            var fileName = Path.GetFileName(file);
+            var baseName = fileName[..^".disabled".Length];
+            rps.Add(new ModInfo { Slug = baseName, Name = baseName, FileName = baseName, Downloaded = true, Enabled = false });
+        }
+        InstalledResourcePacks = rps;
+
+        var sps = new ObservableCollection<ModInfo>();
+        foreach (var file in Directory.GetFiles(_spPath, "*.zip"))
+        {
+            var fileName = Path.GetFileName(file);
+            sps.Add(new ModInfo { Slug = fileName, Name = fileName, FileName = fileName, Downloaded = true, Enabled = true });
+        }
+        foreach (var file in Directory.GetFiles(_spPath, "*.zip.disabled"))
+        {
+            var fileName = Path.GetFileName(file);
+            var baseName = fileName[..^".disabled".Length];
+            sps.Add(new ModInfo { Slug = baseName, Name = baseName, FileName = baseName, Downloaded = true, Enabled = false });
+        }
+        InstalledShaderPacks = sps;
+    }
+
+    private async Task CheckUpdatesAsync()
+    {
+        if (IsCheckingUpdates || InstalledMods.Count == 0) return;
+        IsCheckingUpdates = true;
+
+        foreach (var mod in InstalledMods)
+        {
+            var info = await _modrinth.CheckUpdateAsync(mod.Slug, _instance.Version, _instance.Loader, mod.FileName ?? "");
+            if (info?.HasUpdate == true)
+            {
+                mod.HasUpdate = true;
+                mod.LatestVersion = info.LatestVersion;
+                mod.DownloadUrl = info.DownloadUrl;
+                mod.FileName = info.FileName;
+            }
+        }
+
+        var copy = InstalledMods;
+        InstalledMods = [];
+        InstalledMods = copy;
+        IsCheckingUpdates = false;
     }
 
     [RelayCommand]
-    private async Task ToggleMod(ModInfo? mod)
+    private async Task ToggleItem(ModInfo? item)
     {
-        if (mod == null || string.IsNullOrEmpty(mod.FileName)) return;
+        if (item == null || string.IsNullOrEmpty(item.FileName)) return;
 
-        // Binding has already updated mod.Enabled via ToggleSwitch
-        var enabledPath = Path.Combine(_modsPath, mod.FileName);
+        var folder = SelectedTab switch
+        {
+            1 => _rpPath,
+            2 => _spPath,
+            _ => _modsPath,
+        };
+
+        var enabledPath = Path.Combine(folder, item.FileName);
         var disabledPath = enabledPath + ".disabled";
 
         try
         {
-            if (mod.Enabled)
+            if (item.Enabled)
             {
                 if (File.Exists(disabledPath))
                     File.Move(disabledPath, enabledPath);
@@ -123,13 +274,16 @@ public partial class ModManagementViewModel : ViewModelBase
                 File.Move(enabledPath, disabledPath);
             }
 
-            var modState = await _instances.LoadModStateAsync(_instance);
-            modState.ModEnabled[mod.Slug] = mod.Enabled;
-            await _instances.SaveModStateAsync(_instance, modState);
+            if (SelectedTab == 0)
+            {
+                var modState = await _instances.LoadModStateAsync(_instance);
+                modState.ModEnabled[item.Slug] = item.Enabled;
+                await _instances.SaveModStateAsync(_instance, modState);
+            }
         }
         catch (Exception ex)
         {
-            _config.Log($"Mod durumu değiştirilemedi ({mod.Slug}): {ex.Message}");
+            _config.Log($"Durum değiştirilemedi ({item.Slug}): {ex.Message}");
         }
     }
 
@@ -141,13 +295,52 @@ public partial class ModManagementViewModel : ViewModelBase
         IsSearching = true;
         SearchStatus = _localization["modmng.searching"];
 
-        var results = await _modrinth.SearchModsAsync(SearchQuery, _instance.Loader);
+        var results = new ObservableCollection<ModSearchResult>();
 
-        SearchResults.Clear();
-        foreach (var hit in results)
-            SearchResults.Add(hit);
+        if (IsCurseForgeSource)
+        {
+            var cfClassId = SelectedTab switch
+            {
+                1 => 12,    // resource packs
+                2 => 6552,  // shader packs
+                _ => 6,     // mods
+            };
+            var cfResults = await _curseforge.SearchModsAsync(SearchQuery, _instance.Version, _instance.Loader, cfClassId);
+            foreach (var mod in cfResults)
+            {
+                results.Add(new ModSearchResult
+                {
+                    Source = "curseforge",
+                    Title = mod.Name,
+                    Description = mod.Summary,
+                    Slug = mod.Slug,
+                    CurseForgeId = mod.Id,
+                    IconUrl = mod.Logo?.ThumbnailUrl ?? mod.Logo?.Url ?? "",
+                });
+            }
 
-        _ = LoadIconsAsync(results);
+            _ = LoadIconsAsync(results.ToList());
+        }
+        else
+        {
+            var projectType = CurrentProjectType;
+            var modrinthResults = await _modrinth.SearchModsAsync(SearchQuery, _instance.Loader, projectType);
+            foreach (var hit in modrinthResults)
+            {
+                results.Add(new ModSearchResult
+                {
+                    Source = "modrinth",
+                    Title = hit.Title,
+                    Description = hit.Description,
+                    Slug = hit.Slug,
+                    IconUrl = hit.IconUrl ?? "",
+                });
+            }
+
+            _ = LoadIconsAsync(results.ToList());
+        }
+
+        SearchResults = results;
 
         SearchStatus = results.Count > 0
             ? $"{results.Count} {_localization["modmng.results"]}"
@@ -155,12 +348,12 @@ public partial class ModManagementViewModel : ViewModelBase
         IsSearching = false;
     }
 
-    private static async Task LoadIconsAsync(List<ModrinthHit> hits)
+    private static async Task LoadIconsAsync(System.Collections.Generic.List<ModSearchResult> results)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("LauncherRoot/1.0");
 
-        foreach (var hit in hits)
+        foreach (var hit in results)
         {
             if (string.IsNullOrWhiteSpace(hit.IconUrl)) continue;
             try
@@ -174,46 +367,182 @@ public partial class ModManagementViewModel : ViewModelBase
     }
 
     [RelayCommand(AllowConcurrentExecutions = true)]
-    private async Task InstallMod(ModrinthHit? hit)
+    private async Task InstallMod(ModSearchResult? hit)
     {
         if (hit == null) return;
 
+        var folder = SelectedTab switch
+        {
+            1 => _rpPath,
+            2 => _spPath,
+            _ => _modsPath,
+        };
+
         try
         {
-            var modInfo = await _modrinth.GetModInfoAsync(hit.Slug, _instance.Version, _instance.Loader);
-            if (modInfo?.DownloadUrl == null) return;
+            string? downloadUrl = null;
+            string? fileName = null;
 
-            var fileName = modInfo.FileName ?? $"{hit.Slug}.jar";
+            if (hit.Source == "curseforge")
+            {
+                var bestFile = await _curseforge.GetBestFileAsync(hit.CurseForgeId, _instance.Version, _instance.Loader);
+                downloadUrl = bestFile?.DownloadUrl;
+                fileName = bestFile?.FileName ?? $"{hit.Slug}.jar";
+            }
+            else
+            {
+                var info = await _modrinth.GetModInfoAsync(hit.Slug, _instance.Version, _instance.Loader);
+                downloadUrl = info?.DownloadUrl;
+                fileName = info?.FileName ?? $"{hit.Slug}.jar";
+            }
+
+            if (downloadUrl == null) return;
+
+            var filePath = Path.Combine(folder, fileName);
+
+            if (!File.Exists(filePath))
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("LauncherRoot/1.0");
+                var response = await client.GetAsync(downloadUrl);
+                response.EnsureSuccessStatusCode();
+                await using var fs = File.Create(filePath);
+                await response.Content.CopyToAsync(fs);
+            }
+
+            if (SelectedTab == 0)
+            {
+                if (InstalledMods.Any(m => m.Slug == hit.Slug)) return;
+                InstalledMods.Add(new ModInfo
+                {
+                    Slug = hit.Slug,
+                    Name = hit.Title,
+                    FileName = fileName,
+                    Downloaded = true,
+                    Enabled = true
+                });
+                _ = CheckUpdatesAsync();
+
+                var modState = await _instances.LoadModStateAsync(_instance);
+                modState.ModEnabled[hit.Slug] = true;
+                await _instances.SaveModStateAsync(_instance, modState);
+            }
+            else
+            {
+                var list = SelectedTab == 1 ? InstalledResourcePacks : InstalledShaderPacks;
+                if (list.Any(m => m.Slug == hit.Slug)) return;
+                list.Add(new ModInfo
+                {
+                    Slug = hit.Slug,
+                    Name = hit.Title,
+                    FileName = fileName,
+                    Downloaded = true,
+                    Enabled = true
+                });
+            }
+
+            CheckIrisInstalled();
+        }
+        catch (Exception ex)
+        {
+            _config.Log($"Yükleme hatası ({hit.Slug}): {ex.Message}");
+        }
+    }
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task UpdateMod(ModInfo? mod)
+    {
+        if (mod?.DownloadUrl == null || mod.FileName == null) return;
+
+        try
+        {
+            var filePath = Path.Combine(_modsPath, mod.FileName);
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LauncherRoot/1.0");
+
+            var backup = filePath + ".bak";
+            if (File.Exists(filePath)) File.Move(filePath, backup);
+
+            try
+            {
+                var response = await client.GetAsync(mod.DownloadUrl);
+                response.EnsureSuccessStatusCode();
+                await using var fs = File.Create(filePath);
+                await response.Content.CopyToAsync(fs);
+                if (File.Exists(backup)) File.Delete(backup);
+                mod.HasUpdate = false;
+                _config.Log($"Mod güncellendi: {mod.Slug}");
+            }
+            catch
+            {
+                if (File.Exists(backup)) File.Move(backup, filePath);
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            _config.Log($"Mod güncelleme hatası ({mod.Slug}): {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void SelectTab(string tabIndex)
+    {
+        if (int.TryParse(tabIndex, out var idx))
+            SelectedTab = idx;
+    }
+
+    [RelayCommand]
+    private void ToggleSource()
+    {
+        IsCurseForgeSource = !IsCurseForgeSource;
+    }
+
+    [RelayCommand]
+    private async Task InstallIris()
+    {
+        if (IsInstallingIris) return;
+        IsInstallingIris = true;
+
+        try
+        {
+            var info = await _modrinth.GetModInfoAsync("iris", _instance.Version, _instance.Loader);
+            if (info?.DownloadUrl == null) return;
+
+            var fileName = info.FileName ?? "iris.jar";
             var filePath = Path.Combine(_modsPath, fileName);
 
             if (!File.Exists(filePath))
             {
                 using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("LauncherRoot/1.0");
-                var response = await client.GetAsync(modInfo.DownloadUrl);
+                var response = await client.GetAsync(info.DownloadUrl);
                 response.EnsureSuccessStatusCode();
                 await using var fs = File.Create(filePath);
                 await response.Content.CopyToAsync(fs);
             }
 
-            if (InstalledMods.Any(m => m.Slug == hit.Slug)) return;
-
-            InstalledMods.Add(new ModInfo
+            if (!InstalledMods.Any(m => m.Slug == "iris"))
             {
-                Slug = hit.Slug,
-                Name = hit.Title,
-                FileName = fileName,
-                Downloaded = true,
-                Enabled = true
-            });
+                InstalledMods.Add(new ModInfo
+                {
+                    Slug = "iris",
+                    Name = "Iris Shaders",
+                    FileName = fileName,
+                    Downloaded = true,
+                    Enabled = true,
+                });
+            }
 
-            var modState = await _instances.LoadModStateAsync(_instance);
-            modState.ModEnabled[hit.Slug] = true;
-            await _instances.SaveModStateAsync(_instance, modState);
+            IsIrisInstalled = true;
         }
         catch (Exception ex)
         {
-            _config.Log($"Mod yükleme hatası ({hit.Slug}): {ex.Message}");
+            _config.Log($"Iris yükleme hatası: {ex.Message}");
+        }
+        finally
+        {
+            IsInstallingIris = false;
         }
     }
 

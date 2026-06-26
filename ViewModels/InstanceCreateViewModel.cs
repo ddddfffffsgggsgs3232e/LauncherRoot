@@ -42,6 +42,12 @@ public partial class InstanceCreateViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isCreating;
 
+    [ObservableProperty]
+    private ObservableCollection<string> _availableGroups = [];
+
+    [ObservableProperty]
+    private string _selectedGroup = "";
+
     public ILocalizationService Localization => _localization;
 
     public bool IsEditing => _editingInstance != null;
@@ -68,16 +74,35 @@ public partial class InstanceCreateViewModel : ViewModelBase
         _http = new HttpClient();
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("LauncherRoot/1.0");
 
+        _ = LoadGroupsAsync();
+
         if (_editingInstance != null)
         {
             InstanceName = _editingInstance.Name;
             SelectedVersion = _editingInstance.Version;
             SelectedLoader = _editingInstance.Loader;
+            SelectedGroup = _editingInstance.Group;
             _ = LoadVersionsAsync();
         }
         else
         {
             _ = LoadVersionsAsync();
+        }
+    }
+
+    private async Task LoadGroupsAsync()
+    {
+        try
+        {
+            var cfg = await _config.LoadConfigAsync();
+            var groups = new ObservableCollection<string> { "" };
+            foreach (var g in cfg.Groups)
+                groups.Add(g);
+            AvailableGroups = groups;
+        }
+        catch
+        {
+            AvailableGroups = new ObservableCollection<string> { "" };
         }
     }
 
@@ -172,7 +197,6 @@ public partial class InstanceCreateViewModel : ViewModelBase
         {
             var allInstances = await _instances.LoadInstancesAsync();
 
-            // Check duplicate name
             var duplicate = allInstances.Any(i =>
                 i.Name == InstanceName &&
                 (_editingInstance == null || i.Id != _editingInstance.Id));
@@ -187,6 +211,7 @@ public partial class InstanceCreateViewModel : ViewModelBase
                 _editingInstance.Name = InstanceName;
                 _editingInstance.Version = SelectedVersion;
                 _editingInstance.Loader = SelectedLoader;
+                _editingInstance.Group = SelectedGroup;
                 await _instances.UpdateInstanceAsync(_editingInstance);
 
                 _config.Log($"Instance güncellendi: {_editingInstance.Name} ({_editingInstance.Loader} {_editingInstance.Version})");
@@ -198,6 +223,7 @@ public partial class InstanceCreateViewModel : ViewModelBase
                     Name = InstanceName,
                     Version = SelectedVersion,
                     Loader = SelectedLoader,
+                    Group = SelectedGroup,
                 };
 
                 await _instances.AddInstanceAsync(instance);
@@ -205,6 +231,8 @@ public partial class InstanceCreateViewModel : ViewModelBase
                 var cfg = await _config.LoadConfigAsync();
                 cfg.SelectedInstanceId = instance.Id;
                 await _config.SaveConfigAsync(cfg);
+
+                SaveNewGroup(SelectedGroup);
 
                 _config.Log($"Instance oluşturuldu: {instance.Name} ({instance.Loader} {instance.Version})");
             }
@@ -220,6 +248,21 @@ public partial class InstanceCreateViewModel : ViewModelBase
         {
             IsCreating = false;
         }
+    }
+
+    private async void SaveNewGroup(string group)
+    {
+        if (string.IsNullOrEmpty(group)) return;
+        try
+        {
+            var cfg = await _config.LoadConfigAsync();
+            if (!cfg.Groups.Contains(group))
+            {
+                cfg.Groups.Add(group);
+                await _config.SaveConfigAsync(cfg);
+            }
+        }
+        catch { }
     }
 
     [RelayCommand]

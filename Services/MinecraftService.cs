@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using LauncherRoot.Models;
 
@@ -472,13 +472,15 @@ public class MinecraftService : IMinecraftService, IDisposable
     private async Task DownloadQuiltLibrariesAsync(JsonElement libraries, string minecraftDir)
     {
         var libDir = Path.Combine(minecraftDir, "libraries");
-        foreach (var lib in libraries.EnumerateArray())
+        var throttle = new SemaphoreSlim(6);
+        var tasks = libraries.EnumerateArray().Select(async lib =>
         {
+            await throttle.WaitAsync();
             try
             {
                 var name = lib.GetProperty("name").GetString()!;
                 var parts = name.Split(':');
-                if (parts.Length < 3) continue;
+                if (parts.Length < 3) return;
 
                 var groupId = parts[0].Replace('.', '/');
                 var artifactId = parts[1];
@@ -489,7 +491,7 @@ public class MinecraftService : IMinecraftService, IDisposable
                     : $"{artifactId}-{version}.jar";
                 var libFilePath = Path.Combine(libDir, groupId, artifactId, version, jarName);
 
-                if (File.Exists(libFilePath)) continue;
+                if (File.Exists(libFilePath)) return;
 
                 var baseUrl = lib.TryGetProperty("url", out var urlProp)
                     ? urlProp.GetString()!
@@ -513,7 +515,13 @@ public class MinecraftService : IMinecraftService, IDisposable
             {
                 _config.Log($"Quilt lib hatası: {ex.Message}");
             }
-        }
+            finally
+            {
+                throttle.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task<JsonElement?> GetVersionDataAsync(string version)
@@ -550,35 +558,43 @@ public class MinecraftService : IMinecraftService, IDisposable
     private async Task DownloadLibrariesAsync(JsonElement libraries, string minecraftDir)
     {
         var libDir = Path.Combine(minecraftDir, "libraries");
-        foreach (var lib in libraries.EnumerateArray())
-        {
-            try
+        var throttle = new SemaphoreSlim(6);
+        var tasks = libraries.EnumerateArray()
+            .Where(ShouldIncludeLibrary)
+            .Select(async lib =>
             {
-                if (!ShouldIncludeLibrary(lib)) continue;
-
-                if (!lib.TryGetProperty("downloads", out var downloads) ||
-                    !downloads.TryGetProperty("artifact", out var artifact)) continue;
-
-                var libPath = artifact.GetProperty("path").GetString()!;
-                var libUrl = artifact.GetProperty("url").GetString()!;
-                var libFilePath = Path.Combine(libDir, libPath);
-
-                if (!File.Exists(libFilePath))
+                await throttle.WaitAsync();
+                try
                 {
-                    var resp = await _http.GetAsync(libUrl);
-                    if (resp.IsSuccessStatusCode)
+                    if (!lib.TryGetProperty("downloads", out var downloads) ||
+                        !downloads.TryGetProperty("artifact", out var artifact)) return;
+
+                    var libPath = artifact.GetProperty("path").GetString()!;
+                    var libUrl = artifact.GetProperty("url").GetString()!;
+                    var libFilePath = Path.Combine(libDir, libPath);
+
+                    if (!File.Exists(libFilePath))
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(libFilePath)!);
-                        await using var fs = File.Create(libFilePath);
-                        await resp.Content.CopyToAsync(fs);
+                        var resp = await _http.GetAsync(libUrl);
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(libFilePath)!);
+                            await using var fs = File.Create(libFilePath);
+                            await resp.Content.CopyToAsync(fs);
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _config.Log($"Kütüphane indirme hatası: {ex.Message}");
-            }
-        }
+                catch (Exception ex)
+                {
+                    _config.Log($"Kütüphane indirme hatası: {ex.Message}");
+                }
+                finally
+                {
+                    throttle.Release();
+                }
+            });
+
+        await Task.WhenAll(tasks);
     }
 
     private static bool ShouldIncludeLibrary(JsonElement lib)
@@ -615,13 +631,15 @@ public class MinecraftService : IMinecraftService, IDisposable
     private async Task DownloadFabricLibrariesAsync(JsonElement libraries, string minecraftDir)
     {
         var libDir = Path.Combine(minecraftDir, "libraries");
-        foreach (var lib in libraries.EnumerateArray())
+        var throttle = new SemaphoreSlim(6);
+        var tasks = libraries.EnumerateArray().Select(async lib =>
         {
+            await throttle.WaitAsync();
             try
             {
                 var name = lib.GetProperty("name").GetString()!;
                 var parts = name.Split(':');
-                if (parts.Length < 3) continue;
+                if (parts.Length < 3) return;
 
                 var groupId = parts[0].Replace('.', '/');
                 var artifactId = parts[1];
@@ -632,7 +650,7 @@ public class MinecraftService : IMinecraftService, IDisposable
                     : $"{artifactId}-{version}.jar";
                 var libFilePath = Path.Combine(libDir, groupId, artifactId, version, jarName);
 
-                if (File.Exists(libFilePath)) continue;
+                if (File.Exists(libFilePath)) return;
 
                 var baseUrl = lib.TryGetProperty("url", out var urlProp)
                     ? urlProp.GetString()!
@@ -656,7 +674,13 @@ public class MinecraftService : IMinecraftService, IDisposable
             {
                 _config.Log($"Fabric lib hatası: {ex.Message}");
             }
-        }
+            finally
+            {
+                throttle.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task DownloadAssetsAsync(string assetsDir, string version)
@@ -671,17 +695,19 @@ public class MinecraftService : IMinecraftService, IDisposable
         var total = objects.EnumerateObject().Count();
         var done = 0;
         var assetBaseUrl = "https://resources.download.minecraft.net";
-        foreach (var asset in objects.EnumerateObject())
+        var throttle = new SemaphoreSlim(8);
+        var tasks = objects.EnumerateObject().Select(async asset =>
         {
-            var hash = asset.Value.GetProperty("hash").GetString()!;
-            var prefix = hash[..2];
-            var objDir = Path.Combine(objectsDir, prefix);
-            var objPath = Path.Combine(objDir, hash);
-            if (!File.Exists(objPath))
+            await throttle.WaitAsync();
+            try
             {
-                Directory.CreateDirectory(objDir);
-                try
+                var hash = asset.Value.GetProperty("hash").GetString()!;
+                var prefix = hash[..2];
+                var objDir = Path.Combine(objectsDir, prefix);
+                var objPath = Path.Combine(objDir, hash);
+                if (!File.Exists(objPath))
                 {
+                    Directory.CreateDirectory(objDir);
                     var resp = await _http.GetAsync($"{assetBaseUrl}/{prefix}/{hash}");
                     if (resp.IsSuccessStatusCode)
                     {
@@ -689,12 +715,18 @@ public class MinecraftService : IMinecraftService, IDisposable
                         await resp.Content.CopyToAsync(fs);
                     }
                 }
-                catch { }
             }
-            done++;
-            if (done % 100 == 0 || done == total)
-                Progress?.Report(0.8 + 0.2 * (double)done / total);
-        }
+            catch { }
+            finally
+            {
+                throttle.Release();
+                var c = Interlocked.Increment(ref done);
+                if (c % 100 == 0 || c == total)
+                    Progress?.Report(0.8 + 0.2 * (double)c / total);
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     public async Task<bool> LaunchInstanceAsync(Instance instance, string username, int ramGB, string assetsDir, string accessToken = "0", string uuid = "")

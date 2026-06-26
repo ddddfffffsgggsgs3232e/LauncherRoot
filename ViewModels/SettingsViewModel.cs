@@ -5,7 +5,6 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LauncherRoot;
 using LauncherRoot.Models;
 using LauncherRoot.Services;
 
@@ -16,6 +15,9 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly ConfigService _config;
     private readonly MainWindowViewModel _main;
     private readonly ILocalizationService _localization;
+    private readonly JavaService _java;
+    private readonly IUpdateService _updater;
+    private readonly IInstallService _installer;
 
     [ObservableProperty]
     private int _ramGB = 4;
@@ -45,112 +47,119 @@ public partial class SettingsViewModel : ViewModelBase
     private string _javaPath = "";
 
     [ObservableProperty]
+    private string _microsoftClientId = "";
+
+    [ObservableProperty]
+    private string _curseForgeApiKey = "";
+
+    [ObservableProperty]
     private int _windowWidth = 854;
 
     [ObservableProperty]
     private int _windowHeight = 480;
 
+    [ObservableProperty]
+    private bool _isJavaInstalled;
+
+    [ObservableProperty]
+    private bool _isDownloadingJava;
+
+    [ObservableProperty]
+    private string _javaStatusText = "";
+
+    [ObservableProperty]
+    private string _currentVersion = "";
+
+    [ObservableProperty]
+    private string _updateStatus = "";
+
+    [ObservableProperty]
+    private bool _isCheckingUpdate;
+
+    [ObservableProperty]
+    private bool _isUpdateAvailable;
+
     public ILocalizationService Localization => _localization;
 
     public ObservableCollection<string> FpsOptions { get; } =
     [
-        "30", "60", "120", "144", "240", "Sınırsız"
+        "30",
+        "60",
+        "120",
+        "144",
+        "240",
+        "",
     ];
 
-    public SettingsViewModel(ConfigService config, MainWindowViewModel main, ILocalizationService localization)
+    public SettingsViewModel(ConfigService config, MainWindowViewModel main, ILocalizationService localization, IUpdateService updater, IInstallService installer)
     {
         _config = config;
         _main = main;
         _localization = localization;
-        _ = LoadAsync();
+        _java = new JavaService();
+        _updater = updater;
+        _installer = installer;
+
+        _ = LoadSettingsAsync();
     }
 
-    private async Task LoadAsync()
+    private async Task LoadSettingsAsync()
     {
-        var cfg = await _config.LoadConfigAsync();
-        RamGB = cfg.RamGB;
-        IsDarkTheme = cfg.DarkTheme;
-        IsTurkish = cfg.Language == "tr";
-        JvmArgs = cfg.JvmArgs;
-        if (string.IsNullOrWhiteSpace(JvmArgs))
-            JvmArgs = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:MaxGCPauseMillis=50 -XX:+DisableExplicitGC";
-
-        PreLaunchCommand = cfg.PreLaunchCommand ?? "";
-        WrapperCommand = cfg.WrapperCommand ?? "";
-        PostExitCommand = cfg.PostExitCommand ?? "";
-
-        JavaPath = cfg.JavaPath ?? "";
-        WindowWidth = cfg.WindowWidth;
-        WindowHeight = cfg.WindowHeight;
-
-        App.SetTheme(cfg.DarkTheme);
-
-        SelectedFpsIndex = cfg.FpsLimit switch
+        try
         {
-            30 => 0,
-            60 => 1,
-            120 => 2,
-            144 => 3,
-            240 => 4,
-            _ => 5,
-        };
+            var cfg = await _config.LoadConfigAsync();
+            RamGB = cfg.RamGB;
+            SelectedFpsIndex = cfg.FpsLimit switch
+            {
+                30 => 0,
+                60 => 1,
+                120 => 2,
+                144 => 3,
+                240 => 4,
+                _ => 5,
+            };
+            IsDarkTheme = cfg.DarkTheme;
+            IsTurkish = cfg.Language != "en";
+            JvmArgs = cfg.JvmArgs;
+            PreLaunchCommand = cfg.PreLaunchCommand;
+            WrapperCommand = cfg.WrapperCommand;
+            PostExitCommand = cfg.PostExitCommand;
+            JavaPath = cfg.JavaPath;
+            MicrosoftClientId = cfg.MicrosoftClientId;
+            CurseForgeApiKey = cfg.CurseForgeApiKey;
+            WindowWidth = cfg.WindowWidth;
+            WindowHeight = cfg.WindowHeight;
+        }
+        catch { }
+
+        IsJavaInstalled = !string.IsNullOrEmpty(JavaPath) || JavaService.FindSystemJava() != null;
+        JavaStatusText = IsJavaInstalled
+            ? string.Format(_localization["settings.java.installed"], JavaPath ?? "system")
+            : _localization["settings.java.notfound"];
+
+        CurrentVersion = string.Format(_localization["settings.update.current"], _updater.CurrentVersion);
     }
 
-    partial void OnRamGBChanged(int value)
+    public async Task<string?> ResolveJavaPathAsync()
     {
-        _ = SaveRamAsync(value);
+        if (!string.IsNullOrEmpty(JavaPath))
+            return JavaPath;
+        return JavaService.FindSystemJava();
     }
 
-    partial void OnSelectedFpsIndexChanged(int value)
-    {
-        _ = SaveFpsAsync(value);
-    }
-
-    partial void OnIsDarkThemeChanged(bool value)
-    {
-        _ = SaveThemeAsync(value);
-    }
-
-    partial void OnIsTurkishChanged(bool value)
-    {
-        var lang = value ? "tr" : "en";
-        _ = SaveLanguageAsync(lang);
-    }
-
-    partial void OnJvmArgsChanged(string value)
-    {
-        _ = SaveJvmArgsAsync(value);
-    }
-
-    partial void OnPreLaunchCommandChanged(string value)
-    {
-        _ = SaveStringAsync(nameof(LauncherConfig.PreLaunchCommand), value);
-    }
-
-    partial void OnWrapperCommandChanged(string value)
-    {
-        _ = SaveStringAsync(nameof(LauncherConfig.WrapperCommand), value);
-    }
-
-    partial void OnPostExitCommandChanged(string value)
-    {
-        _ = SaveStringAsync(nameof(LauncherConfig.PostExitCommand), value);
-    }
-
-    partial void OnJavaPathChanged(string value)
-    {
-        _ = SaveStringAsync(nameof(LauncherConfig.JavaPath), value);
-    }
-
-    partial void OnWindowWidthChanged(int value)
-    {
-        _ = SaveIntAsync(nameof(LauncherConfig.WindowWidth), value);
-    }
-
-    partial void OnWindowHeightChanged(int value)
-    {
-        _ = SaveIntAsync(nameof(LauncherConfig.WindowHeight), value);
-    }
+    partial void OnRamGBChanged(int value) => _ = SaveIntAsync("RamGB", value);
+    partial void OnSelectedFpsIndexChanged(int value) => _ = SaveFpsAsync(value);
+    partial void OnIsDarkThemeChanged(bool value) => _ = SaveThemeAsync(value);
+    partial void OnIsTurkishChanged(bool value) => _ = SaveLanguageAsync(value ? "tr" : "en");
+    partial void OnJvmArgsChanged(string value) => _ = SaveJvmArgsAsync(value);
+    partial void OnPreLaunchCommandChanged(string value) => _ = SaveStringAsync("PreLaunchCommand", value);
+    partial void OnWrapperCommandChanged(string value) => _ = SaveStringAsync("WrapperCommand", value);
+    partial void OnPostExitCommandChanged(string value) => _ = SaveStringAsync("PostExitCommand", value);
+    partial void OnJavaPathChanged(string value) => _ = SaveStringAsync("JavaPath", value);
+    partial void OnMicrosoftClientIdChanged(string value) => _ = SaveStringAsync("MicrosoftClientId", value);
+    partial void OnCurseForgeApiKeyChanged(string value) => _ = SaveStringAsync("CurseForgeApiKey", value);
+    partial void OnWindowWidthChanged(int value) => _ = SaveIntAsync("WindowWidth", value);
+    partial void OnWindowHeightChanged(int value) => _ = SaveIntAsync("WindowHeight", value);
 
     private async Task SaveStringAsync(string property, string value)
     {
@@ -275,8 +284,97 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task InstallDesktop()
+    {
+        await _installer.InstallAsync(force: true);
+    }
+
+    [RelayCommand]
+    private async Task DownloadJava()
+    {
+        if (IsDownloadingJava) return;
+        IsDownloadingJava = true;
+        JavaStatusText = _localization["settings.java.detecting"];
+
+        try
+        {
+            var installDir = System.IO.Path.Combine(_config.RootPath, "java");
+            var path = await _java.DownloadJavaAsync(installDir);
+            if (path != null)
+            {
+                JavaPath = path;
+                IsJavaInstalled = true;
+                JavaStatusText = string.Format(_localization["settings.java.installed"], path);
+            }
+        }
+        finally
+        {
+            IsDownloadingJava = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task ResetLauncher()
     {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var window = desktop.MainWindow;
+            if (window == null) return;
+
+            var dialog = new Avalonia.Controls.Window
+            {
+                Title = _localization["settings.reset"],
+                SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
+                CanResize = false,
+                WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner,
+                MinWidth = 340,
+                MaxWidth = 480,
+                Padding = new Avalonia.Thickness(24),
+            };
+
+            var stack = new Avalonia.Controls.StackPanel { Spacing = 16 };
+
+            stack.Children.Add(new Avalonia.Controls.TextBlock
+            {
+                Text = _localization["settings.reset.confirm"],
+                FontSize = 14,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            });
+
+            var btnPanel = new Avalonia.Controls.StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Horizontal,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                Spacing = 8,
+            };
+
+            var cancelBtn = new Avalonia.Controls.Button
+            {
+                Content = _localization["microsoft.cancel"],
+                MinWidth = 80,
+                Height = 32,
+                Classes = { "secondary" },
+            };
+            cancelBtn.Click += (_, _) => dialog.Close(false);
+
+            var confirmBtn = new Avalonia.Controls.Button
+            {
+                Content = _localization["settings.resetbtn"],
+                MinWidth = 80,
+                Height = 32,
+                Classes = { "danger" },
+            };
+            confirmBtn.Click += (_, _) => dialog.Close(true);
+
+            btnPanel.Children.Add(cancelBtn);
+            btnPanel.Children.Add(confirmBtn);
+            stack.Children.Add(btnPanel);
+            dialog.Content = stack;
+
+            var result = await dialog.ShowDialog<bool>(window);
+            if (!result) return;
+        }
+
         try
         {
             _config.ResetAll();
@@ -290,6 +388,41 @@ public partial class SettingsViewModel : ViewModelBase
         {
             _config.Log($"Sıfırlama hatası: {ex.Message}");
         }
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdates()
+    {
+        if (IsCheckingUpdate) return;
+        IsCheckingUpdate = true;
+        IsUpdateAvailable = false;
+        UpdateStatus = _localization["settings.update.checking"];
+
+        var info = await _updater.CheckForUpdatesAsync();
+        if (info == null)
+        {
+            UpdateStatus = _localization["settings.update.nonew"];
+            IsCheckingUpdate = false;
+            return;
+        }
+
+        IsUpdateAvailable = true;
+        UpdateStatus = string.Format(_localization["settings.update.available"], info.Version);
+        IsCheckingUpdate = false;
+
+        UpdateStatus = _localization["settings.update.downloading"];
+        var path = await _updater.DownloadUpdateAsync(info);
+        if (path == null)
+        {
+            UpdateStatus = _localization["settings.update.error"];
+            return;
+        }
+
+        UpdateStatus = _localization["settings.update.downloaded"];
+        _updater.ScheduleRestart(path);
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.MainWindow?.Close();
     }
 
     [RelayCommand]

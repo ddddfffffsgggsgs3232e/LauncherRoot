@@ -9,13 +9,13 @@
       <TextBlock Text="🆕"
                  FontSize="36"
                  HorizontalAlignment="Center"
+                 Foreground="{DynamicResource AccentBrush}"
                  Opacity="0.6"
                  IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
-      <TextBlock Text="✏️"
-                 FontSize="36"
-                 HorizontalAlignment="Center"
-                 Opacity="0.6"
-                 IsVisible="{Binding IsEditing}" />
+      <Border Height="2" Width="40"
+              Background="{DynamicResource AccentBrush}"
+              HorizontalAlignment="Center"
+              CornerRadius="1" />
       <TextBlock Text="{Binding Localization[menu.newinstance]}"
                  IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}"
                  Classes="h1"
@@ -24,11 +24,11 @@
                  IsVisible="{Binding IsEditing}"
                  Classes="h1"
                  HorizontalAlignment="Center" />
-      <TextBlock Text="Minecraft sürümü ve yükleyici seçin"
+      <TextBlock Text="{Binding Localization[instance.createsub]}"
                  Classes="body"
                  HorizontalAlignment="Center"
                  IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
-      <TextBlock Text="Profil ayarlarını değiştirin"
+      <TextBlock Text="{Binding Localization[instance.editsub]}"
                  Classes="body"
                  HorizontalAlignment="Center"
                  IsVisible="{Binding IsEditing}" />
@@ -38,7 +38,7 @@
     <ScrollViewer Grid.Row="1" HorizontalAlignment="Center">
       <StackPanel Spacing="20" Width="480">
         <!-- Loading -->
-        <TextBlock Text="Sürümler yükleniyor..."
+        <TextBlock Text="{Binding Localization[instance.loading]}"
                    IsVisible="{Binding IsLoading}"
                    HorizontalAlignment="Center"
                    Classes="body" />
@@ -48,8 +48,8 @@
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="Minecraft Sürümü" Classes="h3" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[instance.version]}"
+                         Classes="h3" VerticalAlignment="Center" />
             </StackPanel>
             <ComboBox ItemsSource="{Binding AvailableVersions}"
                       SelectedItem="{Binding SelectedVersion}"
@@ -64,8 +64,9 @@
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}">
           <StackPanel Spacing="14">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="⚙️" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="Yükleyici (Loader)" Classes="h3" VerticalAlignment="Center" />
+              <TextBlock Text="️" FontSize="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Localization[instance.loader]}"
+                         Classes="h3" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
               <Button Command="{Binding SelectLoaderCommand}"
@@ -74,7 +75,6 @@
                       CornerRadius="14"
                       Background="{Binding IsVanilla, Converter={StaticResource BoolToBrush}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
-                  <TextBlock Text="🟩" FontSize="22" HorizontalAlignment="Center" />
                   <TextBlock Text="Vanilla" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
@@ -85,7 +85,6 @@
                       CornerRadius="14"
                       Background="{Binding IsFabric, Converter={StaticResource BoolToBrush}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
-                  <TextBlock Text="🔧" FontSize="22" HorizontalAlignment="Center" />
                   <TextBlock Text="Fabric" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
@@ -96,7 +95,6 @@
                       CornerRadius="14"
                       Background="{Binding IsForge, Converter={StaticResource BoolToBrush}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
-                  <TextBlock Text="⚒️" FontSize="22" HorizontalAlignment="Center" />
                   <TextBlock Text="Forge" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
@@ -107,7 +105,6 @@
                       CornerRadius="14"
                       Background="{Binding IsNeoforge, Converter={StaticResource BoolToBrush}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
-                  <TextBlock Text="🔶" FontSize="22" HorizontalAlignment="Center" />
                   <TextBlock Text="NeoForge" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
@@ -118,7 +115,6 @@
                       CornerRadius="14"
                       Background="{Binding IsQuilt, Converter={StaticResource BoolToBrush}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
-                  <TextBlock Text="🪡" FontSize="22" HorizontalAlignment="Center" />
                   <TextBlock Text="Quilt" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
@@ -137,6 +133,20 @@
             <TextBox Text="{Binding InstanceName}"
                      Height="40" FontSize="15"
                      Watermark="{Binding Localization[instance.name.placeholder]}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Group Selection -->
+        <Border Classes="card" Padding="20"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding Localization[group.select]}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <ComboBox ItemsSource="{Binding AvailableGroups}"
+                      SelectedItem="{Binding SelectedGroup}"
+                      Height="38" Width="320"
+                      HorizontalAlignment="Left" />
           </StackPanel>
         </Border>
 
@@ -159,7 +169,7 @@
               FontSize="14">
         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
           <TextBlock Text="←" FontSize="15" />
-          <TextBlock Text="Geri" />
+          <TextBlock Text="{Binding Localization[menu.back]}" />
         </StackPanel>
       </Button>
       <Button Command="{Binding CreateCommand}"
@@ -171,10 +181,14 @@
               Margin="12,0,0,0"
               IsEnabled="{Binding IsCreating, Converter={StaticResource InverseBool}}">
         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <TextBlock Text="+" FontSize="20" FontWeight="Bold" IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
-          <TextBlock Text="Oluştur" VerticalAlignment="Center" IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
-          <TextBlock Text="✓" FontSize="18" FontWeight="Bold" IsVisible="{Binding IsEditing}" />
-          <TextBlock Text="Kaydet" VerticalAlignment="Center" IsVisible="{Binding IsEditing}" />
+          <TextBlock Text="+" FontSize="20" FontWeight="Bold"
+                     IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
+          <TextBlock Text="{Binding Localization[instance.create]}"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding IsEditing, Converter={StaticResource InverseBool}}" />
+          <TextBlock Text="{Binding Localization[instance.save]}"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding IsEditing}" />
         </StackPanel>
       </Button>
     </Grid>

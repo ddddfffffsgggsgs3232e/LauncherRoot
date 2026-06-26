@@ -10,14 +10,16 @@
                FontWeight="Bold"
                HorizontalAlignment="Center"
                Grid.Row="0"
-               Margin="0,20,0,0" />
+               Margin="0,20,0,0"
+               Foreground="{DynamicResource TextPrimaryBrush}" />
 
     <!-- Subtitle -->
     <TextBlock Text="{Binding Localization[theme.select]}"
                FontSize="16"
                HorizontalAlignment="Center"
                Grid.Row="1"
-               Margin="0,10,0,20" />
+               Margin="0,10,0,20"
+               Foreground="{DynamicResource TextSecondaryBrush}" />
 
     <!-- Theme cards -->
     <ItemsControl ItemsSource="{Binding Themes}"
@@ -30,46 +32,63 @@
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate DataType="{x:Type models:Theme}">
-          <Button Background="#2D2D2D"
-                  CornerRadius="12"
-                  Width="200"
-                  Height="240"
-                  Padding="16"
-                  Margin="8"
-                  Cursor="Hand"
-                  Command="{Binding DataContext.SelectThemeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                  CommandParameter="{Binding}"
-                  Classes="ThemeCard">
-            <StackPanel Spacing="8"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center">
-              <TextBlock Text="{Binding Icon}"
-                         FontSize="40"
-                         HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding LocalizedName}"
-                         FontSize="18"
-                         FontWeight="Bold"
-                         HorizontalAlignment="Center"
-                         TextWrapping="Wrap" />
-              <TextBlock Text="{Binding LocalizedDescription}"
-                         FontSize="12"
-                         HorizontalAlignment="Center"
-                         TextWrapping="Wrap"
-                         MaxWidth="160"
-                         Opacity="0.8" />
-              <TextBlock Text="{Binding Mods.Count, StringFormat='{}{0} 📦'}"
-                         FontSize="12"
-                         HorizontalAlignment="Center"
-                         Opacity="0.6" />
-            </StackPanel>
-          </Button>
+          <Border Classes="card"
+                  Width="200" Height="240"
+                  Padding="0" Margin="8">
+            <Button Background="Transparent"
+                    Foreground="{DynamicResource TextPrimaryBrush}"
+                    BorderThickness="0"
+                    CornerRadius="12"
+                    Padding="16"
+                    Cursor="Hand"
+                    Command="{Binding DataContext.SelectThemeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                    CommandParameter="{Binding}">
+              <Button.Styles>
+                <Style Selector="Button">
+                  <Setter Property="RenderTransform" Value="scale(1)" />
+                  <Setter Property="Transitions">
+                    <Transitions>
+                      <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+                    </Transitions>
+                  </Setter>
+                </Style>
+                <Style Selector="Button:pointerover">
+                  <Setter Property="RenderTransform" Value="scale(1.03)" />
+                </Style>
+                <Style Selector="Button:pressed">
+                  <Setter Property="RenderTransform" Value="scale(0.97)" />
+                </Style>
+              </Button.Styles>
+              <StackPanel Spacing="8"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center">
+                <TextBlock Text="{Binding Icon}"
+                           FontSize="40"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding LocalizedName}"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding LocalizedDescription}"
+                           FontSize="12"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="160"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding Mods.Count, StringFormat='{}{0} '}"
+                           FontSize="12"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </Button>
+          </Border>
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
 
     <!-- Download progress -->
-    <Border Background="#2D2D2D"
-            CornerRadius="8"
+    <Border Classes="card"
             Padding="20"
             Grid.Row="3"
             VerticalAlignment="Bottom"
@@ -77,7 +96,6 @@
             Margin="0,20">
       <StackPanel Spacing="10">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-          <TextBlock Text="⏳" FontSize="18" />
           <TextBlock Text="{Binding Localization[theme.downloading]}"
                      FontSize="16" />
         </StackPanel>
@@ -87,6 +105,7 @@
                      Maximum="1" />
         <TextBlock Text="{Binding ProgressText}"
                    FontSize="14"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center" />
       </StackPanel>
     </Border>

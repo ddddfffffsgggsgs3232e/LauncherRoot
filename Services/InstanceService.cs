@@ -53,6 +53,8 @@ public class InstanceService : IInstanceService
         var instanceDir = Path.Combine(_instancesDir, instance.InstanceDir);
         Directory.CreateDirectory(Path.Combine(instanceDir, "minecraft", "versions"));
         Directory.CreateDirectory(Path.Combine(instanceDir, "minecraft", "libraries"));
+        Directory.CreateDirectory(Path.Combine(instanceDir, "minecraft", "resourcepacks"));
+        Directory.CreateDirectory(Path.Combine(instanceDir, "minecraft", "shaderpacks"));
         Directory.CreateDirectory(Path.Combine(instanceDir, "mods"));
     }
 
@@ -126,6 +128,16 @@ public class InstanceService : IInstanceService
         return Path.Combine(_instancesDir, instance.InstanceDir, "mods");
     }
 
+    public string GetInstanceResourcepackPath(Instance instance)
+    {
+        return Path.Combine(_instancesDir, instance.InstanceDir, "minecraft", "resourcepacks");
+    }
+
+    public string GetInstanceShaderpackPath(Instance instance)
+    {
+        return Path.Combine(_instancesDir, instance.InstanceDir, "minecraft", "shaderpacks");
+    }
+
     public string GetInstanceGamePath(Instance instance)
     {
         return Path.Combine(_instancesDir, instance.InstanceDir);
@@ -146,5 +158,84 @@ public class InstanceService : IInstanceService
         var path = Path.Combine(dir, "modstate.json");
         await using var fs = File.Create(path);
         await JsonSerializer.SerializeAsync(fs, state, JsonOpts);
+    }
+
+    public async Task<byte[]> ExportInstanceAsync(Instance instance)
+    {
+        var instanceDir = Path.Combine(_instancesDir, instance.InstanceDir);
+        using var ms = new MemoryStream();
+        using var archive = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, true);
+
+        var metaEntry = archive.CreateEntry("instance.json");
+        await using (var writer = new StreamWriter(metaEntry.Open()))
+            await writer.WriteAsync(JsonSerializer.Serialize(instance, JsonOpts));
+
+        var modsDir = Path.Combine(instanceDir, "mods");
+        if (Directory.Exists(modsDir))
+        {
+            foreach (var file in Directory.GetFiles(modsDir))
+            {
+                var name = Path.GetFileName(file);
+                var entry = archive.CreateEntry($"mods/{name}");
+                await using (var entryStream = entry.Open())
+                await using (var fileStream = File.OpenRead(file))
+                    await fileStream.CopyToAsync(entryStream);
+            }
+        }
+
+        return ms.ToArray();
+    }
+
+    public async Task<Instance?> ImportInstanceAsync(byte[] data)
+    {
+        using var ms = new MemoryStream(data);
+        using var archive = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Read);
+
+        var metaEntry = archive.GetEntry("instance.json");
+        if (metaEntry == null) return null;
+
+        Instance? instance;
+        using (var reader = new StreamReader(metaEntry.Open()))
+            instance = JsonSerializer.Deserialize<Instance>(await reader.ReadToEndAsync(), JsonOpts);
+
+        if (instance == null) return null;
+
+        instance.Id = Guid.NewGuid().ToString("N")[..8];
+        instance.Name = $"{instance.Name} (imported)";
+        instance.CreatedAt = DateTime.Now;
+
+        var instanceDir = Path.Combine(_instancesDir, instance.InstanceDir);
+        Directory.CreateDirectory(Path.Combine(instanceDir, "mods"));
+
+        var modsDir = archive.GetEntry("mods/");
+        if (modsDir != null)
+        {
+            foreach (var entry in archive.Entries)
+            {
+                if (entry.FullName.StartsWith("mods/") && !entry.FullName.EndsWith("/"))
+                {
+                    var path = Path.Combine(instanceDir, entry.FullName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                    await using (var entryStream = entry.Open())
+                    await using (var fs = File.Create(path))
+                        await entryStream.CopyToAsync(fs);
+                }
+            }
+        }
+
+        var instances = await LoadInstancesAsync();
+        instances.Add(instance);
+        await SaveInstancesAsync(instances);
+
+        return instance;
+    }
+
+    public async Task AddPlayTimeAsync(string instanceId, long seconds)
+    {
+        var instances = await LoadInstancesAsync();
+        var instance = instances.Find(i => i.Id == instanceId);
+        if (instance == null) return;
+        instance.PlayTimeSeconds += seconds;
+        await SaveInstancesAsync(instances);
     }
 }

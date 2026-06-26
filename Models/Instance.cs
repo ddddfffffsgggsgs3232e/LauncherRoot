@@ -8,6 +8,8 @@ public class Instance
     public string Loader { get; set; } = "vanilla";
     public string? LoaderVersion { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public long PlayTimeSeconds { get; set; }
+    public string Group { get; set; } = "";
 
     public string DisplayName => string.IsNullOrEmpty(Name)
         ? $"{Version} ({Loader})"
@@ -32,4 +34,17 @@ public class Instance
     };
 
     public string InstanceDir => $"{Version}-{Loader}-{Id}";
+
+    public string PlayTimeLabel
+    {
+        get
+        {
+            var ts = TimeSpan.FromSeconds(PlayTimeSeconds);
+            if (ts.TotalHours >= 1)
+                return $"{(int)ts.TotalHours}s {ts.Minutes}dk";
+            if (ts.TotalMinutes >= 1)
+                return $"{ts.Minutes}dk {ts.Seconds}s";
+            return $"{ts.Seconds}s";
+        }
+    }
 }

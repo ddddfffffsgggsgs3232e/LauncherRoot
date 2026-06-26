@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using LauncherRoot.Models;
 
@@ -32,17 +34,17 @@ public class ModrinthService : IModrinthService
 
         Directory.CreateDirectory(modsPath);
 
-        foreach (var themeMod in mods)
+        var throttle = new SemaphoreSlim(3);
+        var tasks = mods.Select(async themeMod =>
         {
+            await throttle.WaitAsync();
             try
             {
                 var modInfo = await GetModInfoAsync(themeMod.Slug, gameVersion, loader);
                 if (modInfo?.DownloadUrl == null || modInfo.FileName == null)
                 {
                     _config.Log($"Mod {themeMod.Slug}: {gameVersion}/{loader} sürümü bulunamadı");
-                    completed++;
-                    Progress?.Report((double)completed / total);
-                    continue;
+                    return (ModInfo?)null;
                 }
 
                 var filePath = Path.Combine(modsPath, modInfo.FileName);
@@ -54,48 +56,62 @@ public class ModrinthService : IModrinthService
                     await response.Content.CopyToAsync(fs);
                 }
 
-                downloaded.Add(new ModInfo
+                _config.Log($"Mod indirildi: {themeMod.Slug} -> {modInfo.FileName}");
+
+                return new ModInfo
                 {
                     Slug = themeMod.Slug,
                     Name = themeMod.Name,
                     FileName = modInfo.FileName,
                     Downloaded = true,
                     Enabled = true
-                });
-
-                _config.Log($"Mod indirildi: {themeMod.Slug} -> {modInfo.FileName}");
+                };
             }
             catch (HttpRequestException ex)
             {
                 _config.Log($"Mod indirme hatası ({themeMod.Slug}): {ex.Message}");
+                return (ModInfo?)null;
             }
             catch (Exception ex)
             {
                 _config.Log($"Beklenmeyen hata ({themeMod.Slug}): {ex.Message}");
+                return (ModInfo?)null;
             }
+            finally
+            {
+                throttle.Release();
+                var c = Interlocked.Increment(ref completed);
+                Progress?.Report((double)c / total);
+            }
+        });
 
-            completed++;
-            Progress?.Report((double)completed / total);
-        }
-
+        var results = await Task.WhenAll(tasks);
+        downloaded.AddRange(results.Where(r => r != null)!);
         return downloaded;
     }
 
-    public async Task<List<ModrinthHit>> SearchModsAsync(string query, string loader = "fabric", int limit = 20)
+    public async Task<List<ModrinthHit>> SearchModsAsync(string query, string loader = "fabric", string projectType = "mod", int limit = 20)
     {
         try
         {
-            var loaderFacet = loader switch
-            {
-                "forge" => "forge",
-                "neoforge" => "neoforge",
-                "fabric" => "fabric",
-                "quilt" => "quilt",
-                _ => "minecraft",
-            };
+            var facetParts = new List<string> { $"project_type:{projectType}" };
 
+            if (projectType == "mod")
+            {
+                var loaderFacet = loader switch
+                {
+                    "forge" => "forge",
+                    "neoforge" => "neoforge",
+                    "fabric" => "fabric",
+                    "quilt" => "quilt",
+                    _ => "minecraft",
+                };
+                facetParts.Add($"categories:{loaderFacet}");
+            }
+
+            var facetsJson = System.Text.Json.JsonSerializer.Serialize(new[] { facetParts.ToArray() });
             var url = $"{BaseUrl}/search?query={Uri.EscapeDataString(query)}" +
-                      $"&facets=[[\"project_type:mod\"],[\"categories:{loaderFacet}\"]]&limit={limit}";
+                      $"&facets={Uri.EscapeDataString(facetsJson)}&limit={limit}";
             var result = await _http.GetFromJsonAsync<ModrinthSearchResult>(url);
             return result?.Hits ?? [];
         }
@@ -155,5 +171,37 @@ public class ModrinthService : IModrinthService
                 .Where(v => v.GameVersions.Contains(gameVersion))
                 .OrderByDescending(v => v.DatePublished)
                 .FirstOrDefault();
+    }
+
+    public async Task<ModInfo?> CheckUpdateAsync(string slug, string gameVersion, string loader, string currentFile)
+    {
+        try
+        {
+            var project = await _http.GetFromJsonAsync<ModrinthProject>($"{BaseUrl}/project/{slug}");
+            if (project == null) return null;
+
+            var versions = await _http.GetFromJsonAsync<List<ModrinthVersion>>($"{BaseUrl}/project/{slug}/version");
+            if (versions == null || versions.Count == 0) return null;
+
+            var best = PickBestVersion(versions, gameVersion, loader);
+            if (best == null) return null;
+
+            var primaryFile = best.Files.FirstOrDefault(f => f.Primary) ?? best.Files.FirstOrDefault();
+            if (primaryFile == null || primaryFile.Filename == currentFile) return null;
+
+            return new ModInfo
+            {
+                Slug = project.Slug,
+                Name = project.Title,
+                DownloadUrl = primaryFile.Url,
+                FileName = primaryFile.Filename,
+                LatestVersion = best.VersionNumber,
+                HasUpdate = true,
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
