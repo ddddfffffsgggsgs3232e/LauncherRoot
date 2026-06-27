@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: linux-x64
             runtime: linux-x64
             extension: ""
             output-name: "MyApp-linux-x64"
@@ -42,9 +42,6 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    # Avalonia için gerekli olan workload'ı yükleyin
-    - name: Install Avalonia workload
-      run: dotnet workload install avalonia
 
     - name: Restore dependencies
       run: dotnet restore
