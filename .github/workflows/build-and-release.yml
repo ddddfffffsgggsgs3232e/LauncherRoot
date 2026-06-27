@@ -48,7 +48,7 @@ jobs:
 
     - name: Build and Publish Self-Contained
       run: |
-        dotnet publish YourProject.csproj \
+        dotnet publish LauncherRoot.csproj \
           --configuration Release \
           --runtime ${{ matrix.runtime }} \
           --self-contained true \
