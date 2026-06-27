@@ -4,34 +4,31 @@ on:
   pull_request:
     types: [closed]
     branches: [ main, master ]
-  # İsterseniz manuel tetikleme için de ekleyebilirsiniz:
   workflow_dispatch:
 
 jobs:
   build:
-    # PR sadece birleştirildiğinde çalışsın
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
-          - os: linux-x64
+          - os: ubuntu-latest
             runtime: linux-x64
             extension: ""
-            output-name: "MyApp-linux-x64"
+            output-name: "LauncherRoot-linux-x64"
           - os: windows-latest
             runtime: win-x64
             extension: ".exe"
-            output-name: "MyApp-win-x64"
+            output-name: "LauncherRoot-win-x64"
           - os: macos-latest
             runtime: osx-x64
             extension: ""
-            output-name: "MyApp-osx-x64"
-          # Apple Silicon (M1/M2) için ek seçenek
+            output-name: "LauncherRoot-osx-x64"
           - os: macos-latest
             runtime: osx-arm64
             extension: ""
-            output-name: "MyApp-osx-arm64"
+            output-name: "LauncherRoot-osx-arm64"
 
     steps:
     - name: Checkout code
@@ -42,14 +39,33 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Install Linux dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libx11-dev libx11-xcb-dev libxcb1-dev \
+          libxcb-render0-dev libxcb-shape0-dev \
+          libxcb-xfixes0-dev libxcb-icccm4-dev \
+          libxcb-image0-dev libxcb-keysyms1-dev \
+          libxcb-randr0-dev libxcb-shm0-dev \
+          libxcb-sync-dev libxcb-xinerama0-dev \
+          libxcb-xkb-dev libxkbcommon-dev \
+          libxkbcommon-x11-dev libgl1-mesa-dev
 
     - name: Restore dependencies
       run: dotnet restore
 
     - name: Build and Publish Self-Contained
+      shell: bash
       run: |
-- name: Build and Publish Self-Contained
-  run: dotnet publish LauncherRoot.csproj --configuration Release --runtime ${{ matrix.runtime }} --self-contained true --output ./publish/${{ matrix.output-name }} -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+        dotnet publish LauncherRoot.csproj \
+          --configuration Release \
+          --runtime ${{ matrix.runtime }} \
+          --self-contained true \
+          --output ./publish/${{ matrix.output-name }} \
+          -p:PublishSingleFile=true \
+          -p:IncludeNativeLibrariesForSelfExtract=true
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -60,8 +76,7 @@ jobs:
   create-release:
     needs: build
     runs-on: ubuntu-latest
-    # Sadece main/master branch'inde çalışsın
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'master'
+    if: github.event.pull_request.merged == true && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'master')
     permissions:
       contents: write
     
