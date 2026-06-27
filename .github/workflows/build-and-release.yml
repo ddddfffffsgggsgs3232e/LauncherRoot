@@ -1,0 +1,92 @@
+name: Build and Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [ main, master ]
+  # İsterseniz manuel tetikleme için de ekleyebilirsiniz:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # PR sadece birleştirildiğinde çalışsın
+    if: github.event.pull_request.merged == true
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runtime: linux-x64
+            extension: ""
+            output-name: "MyApp-linux-x64"
+          - os: windows-latest
+            runtime: win-x64
+            extension: ".exe"
+            output-name: "MyApp-win-x64"
+          - os: macos-latest
+            runtime: osx-x64
+            extension: ""
+            output-name: "MyApp-osx-x64"
+          # Apple Silicon (M1/M2) için ek seçenek
+          - os: macos-latest
+            runtime: osx-arm64
+            extension: ""
+            output-name: "MyApp-osx-arm64"
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    # Avalonia için gerekli olan workload'ı yükleyin
+    - name: Install Avalonia workload
+      run: dotnet workload install avalonia
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build and Publish Self-Contained
+      run: |
+        dotnet publish YourProject.csproj \
+          --configuration Release \
+          --runtime ${{ matrix.runtime }} \
+          --self-contained true \
+          --output ./publish/${{ matrix.output-name }} \
+          -p:PublishSingleFile=true \
+          -p:IncludeNativeLibrariesForSelfExtract=true
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.output-name }}
+        path: ./publish/${{ matrix.output-name }}/**/*
+
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    # Sadece main/master branch'inde çalışsın
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'master'
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+
+    - name: Create Release and Upload Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: nightly-${{ github.run_number }}
+        name: Nightly Build #${{ github.run_number }}
+        draft: false
+        prerelease: true
+        files: |
+          ./artifacts/**/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
