@@ -48,13 +48,8 @@ jobs:
 
     - name: Build and Publish Self-Contained
       run: |
-        dotnet publish LauncherRoot.csproj \
-          --configuration Release \
-          --runtime ${{ matrix.runtime }} \
-          --self-contained true \
-          --output ./publish/${{ matrix.output-name }} \
-          -p:PublishSingleFile=true \
-          -p:IncludeNativeLibrariesForSelfExtract=true
+- name: Build and Publish Self-Contained
+  run: dotnet publish LauncherRoot.csproj --configuration Release --runtime ${{ matrix.runtime }} --self-contained true --output ./publish/${{ matrix.output-name }} -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
