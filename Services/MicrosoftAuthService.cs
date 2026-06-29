@@ -21,12 +21,14 @@ public class MicrosoftAuthService : IDisposable
     private readonly HttpClient _http;
     private readonly ConfigService _config;
 
-    private const string DeviceCodeUrl = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
+    private const string AuthorizeUrl = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
     private const string TokenUrl = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
     private const string XboxAuthUrl = "https://user.auth.xboxlive.com/user/authenticate";
     private const string XstsAuthUrl = "https://xsts.auth.xboxlive.com/xsts/authorize";
     private const string MinecraftAuthUrl = "https://api.minecraftservices.com/authentication/login_with_xbox";
     private const string MinecraftProfileUrl = "https://api.minecraftservices.com/minecraft/profile";
+
+    private const string Scope = "XboxLive.signin offline_access";
 
     private static string DefaultClientId { get; set; } = "c36a9fb6-4f2a-41ff-90bd-ae7cc92031eb";
 
@@ -46,88 +48,61 @@ public class MicrosoftAuthService : IDisposable
 
     private string ClientIdToUse => DefaultClientId;
 
-    public async Task<MicrosoftAuthResult> StartDeviceFlowAsync(
-        Func<string, string, Task> showCodeCallback,
+    public async Task<MicrosoftAuthResult> LoginWithBrowserAsync(
         Func<string, Task> updateStatusCallback)
     {
         try
         {
             await updateStatusCallback("microsoft.connecting");
 
-            // Step 1: Get device code
-            using var deviceContent = new FormUrlEncodedContent(new[]
+            using var server = new LocalAuthServer();
+            server.Start();
+            var (verifier, challenge) = PkceHelper.Generate();
+
+            var redirectUri = Uri.EscapeDataString(server.RedirectUri);
+            var authUrl = $"{AuthorizeUrl}?client_id={ClientIdToUse}&response_type=code&redirect_uri={redirectUri}&scope={Uri.EscapeDataString(Scope)}&code_challenge={challenge}&code_challenge_method=S256";
+
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = authUrl,
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch
+            {
+                return Fail("Tarayıcı açılamadı. Lütfen manuel olarak giriş yap.");
+            }
+
+            var code = await server.WaitForCodeAsync();
+
+            if (string.IsNullOrEmpty(code))
+                return Fail("Giriş zaman aşımına uğradı veya iptal edildi.");
+
+            using var tokenContent = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("client_id", ClientIdToUse),
-                new KeyValuePair<string, string>("scope", "XboxLive.signin offline_access"),
+                new KeyValuePair<string, string>("grant_type", "authorization_code"),
+                new KeyValuePair<string, string>("code", code),
+                new KeyValuePair<string, string>("redirect_uri", server.RedirectUri),
+                new KeyValuePair<string, string>("code_verifier", verifier),
             });
-            var deviceResp = await _http.PostAsync(DeviceCodeUrl, deviceContent).ConfigureAwait(false);
+            var tokenResp = await _http.PostAsync(TokenUrl, tokenContent).ConfigureAwait(false);
 
-            if (!deviceResp.IsSuccessStatusCode)
+            if (!tokenResp.IsSuccessStatusCode)
             {
-                var body = await deviceResp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                _config.Log($"Cihaz kodu hatası ({deviceResp.StatusCode}): {body}");
-                return Fail($"Microsoft sunucusu hata döndü ({(int)deviceResp.StatusCode}). İnternet bağlantını kontrol et veya daha sonra tekrar dene.");
+                var body = await tokenResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                _config.Log($"Microsoft token hatası ({tokenResp.StatusCode}): {body}");
+                return Fail("Microsoft oturumu açılamadı. Lütfen tekrar dene.");
             }
 
-            var deviceJson = await deviceResp.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
-            var deviceCode = deviceJson.GetProperty("device_code").GetString()!;
-            var userCode = deviceJson.GetProperty("user_code").GetString()!;
-            var verificationUri = deviceJson.GetProperty("verification_uri").GetString()!;
-            var interval = deviceJson.GetProperty("interval").GetInt32();
-
-            await showCodeCallback(userCode, verificationUri);
-
-            // Step 2: Poll for token
-            string? microsoftToken = null;
-            var maxAttempts = 120;
-            for (var i = 0; i < maxAttempts; i++)
-            {
-                await Task.Delay(interval * 1000).ConfigureAwait(false);
-
-                try
-                {
-                    using var tokenContent = new FormUrlEncodedContent(new[]
-                    {
-                        new KeyValuePair<string, string>("client_id", ClientIdToUse),
-                        new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
-                        new KeyValuePair<string, string>("device_code", deviceCode),
-                    });
-                    var tokenResp = await _http.PostAsync(TokenUrl, tokenContent).ConfigureAwait(false);
-
-                    if (tokenResp.IsSuccessStatusCode)
-                    {
-                        var tokenJson = await tokenResp.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
-                        microsoftToken = tokenJson.GetProperty("access_token").GetString();
-                        break;
-                    }
-
-                    var errorJson = await tokenResp.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
-                    var error = errorJson.GetProperty("error").GetString();
-                    if (error == "authorization_declined" || error == "expired_token")
-                    {
-                        await updateStatusCallback("microsoft.declined");
-                        return Fail("Doğrulama iptal edildi veya süresi doldu.");
-                    }
-                    if (error == "slow_down")
-                    {
-                        interval += 5;
-                    }
-                }
-                catch (Exception pollEx)
-                {
-                    _config.Log($"Token yoklama hatası (deneme {i + 1}): {pollEx.Message}");
-                }
-            }
-
-            if (microsoftToken == null)
-            {
-                await updateStatusCallback("microsoft.timeout");
-                return Fail("Doğrulama zaman aşımına uğradı. Tarayıcıdaki kodu girdiğinden emin ol.");
-            }
+            var tokenJson = await tokenResp.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+            var microsoftToken = tokenJson.GetProperty("access_token").GetString()!;
 
             await updateStatusCallback("microsoft.xbox_live");
 
-            // Step 3: Xbox Live auth
             var xboxResp = await _http.PostAsync(XboxAuthUrl, JsonContent.Create(new
             {
                 Properties = new
@@ -152,7 +127,6 @@ public class MicrosoftAuthService : IDisposable
 
             await updateStatusCallback("microsoft.xsts");
 
-            // Step 4: XSTS auth
             var xstsResp = await _http.PostAsync(XstsAuthUrl, JsonContent.Create(new
             {
                 Properties = new
@@ -177,7 +151,6 @@ public class MicrosoftAuthService : IDisposable
 
             await updateStatusCallback("microsoft.minecraft_auth");
 
-            // Step 5: Minecraft auth
             var mcResp = await _http.PostAsync(MinecraftAuthUrl, JsonContent.Create(new
             {
                 identityToken = $"XBL3.0 x={userHash};{xstsToken}"
@@ -195,7 +168,6 @@ public class MicrosoftAuthService : IDisposable
 
             await updateStatusCallback("microsoft.profile");
 
-            // Step 6: Minecraft profile
             var profileReq = new HttpRequestMessage(HttpMethod.Get, MinecraftProfileUrl);
             profileReq.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", mcAccessToken);
             var profileResp = await _http.SendAsync(profileReq).ConfigureAwait(false);

@@ -47,12 +47,6 @@ public partial class SettingsViewModel : ViewModelBase
     private string _javaPath = "";
 
     [ObservableProperty]
-    private string _microsoftClientId = "";
-
-    [ObservableProperty]
-    private string _curseForgeApiKey = "";
-
-    [ObservableProperty]
     private int _windowWidth = 854;
 
     [ObservableProperty]
@@ -125,8 +119,6 @@ public partial class SettingsViewModel : ViewModelBase
             WrapperCommand = cfg.WrapperCommand;
             PostExitCommand = cfg.PostExitCommand;
             JavaPath = cfg.JavaPath;
-            MicrosoftClientId = cfg.MicrosoftClientId;
-            CurseForgeApiKey = cfg.CurseForgeApiKey;
             WindowWidth = cfg.WindowWidth;
             WindowHeight = cfg.WindowHeight;
         }
@@ -156,8 +148,6 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnWrapperCommandChanged(string value) => _ = SaveStringAsync("WrapperCommand", value);
     partial void OnPostExitCommandChanged(string value) => _ = SaveStringAsync("PostExitCommand", value);
     partial void OnJavaPathChanged(string value) => _ = SaveStringAsync("JavaPath", value);
-    partial void OnMicrosoftClientIdChanged(string value) => _ = SaveStringAsync("MicrosoftClientId", value);
-    partial void OnCurseForgeApiKeyChanged(string value) => _ = SaveStringAsync("CurseForgeApiKey", value);
     partial void OnWindowWidthChanged(int value) => _ = SaveIntAsync("WindowWidth", value);
     partial void OnWindowHeightChanged(int value) => _ = SaveIntAsync("WindowHeight", value);
 

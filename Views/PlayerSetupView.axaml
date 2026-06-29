@@ -37,8 +37,10 @@
                     </StackPanel>
                     <Button Grid.Column="1" Classes="ghost" Padding="4"
                             Command="{Binding DataContext.DeleteAccountCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                            CommandParameter="{Binding}">
-                      </Button>
+                            CommandParameter="{Binding}"
+                            Foreground="{DynamicResource ErrorBrush}">
+                      <TextBlock Text="✕" FontSize="14" />
+                    </Button>
                   </Grid>
                 </Border>
               </Button>
@@ -124,54 +126,16 @@
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
 
-            <!-- Microsoft code display -->
-            <Border Background="{DynamicResource BgSecondaryBrush}"
-                    CornerRadius="10" Padding="20"
-                    IsVisible="{Binding ShowMicrosoftCode}">
-              <StackPanel Spacing="12" HorizontalAlignment="Center">
-                <TextBlock Text="{Binding MicrosoftStatus}"
-                           FontSize="13"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center"
-                           TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Localization[microsoft.yourcode]}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           HorizontalAlignment="Center" />
-                <Border Background="{DynamicResource BgCardBrush}"
-                        CornerRadius="8" Padding="16,10"
-                        BorderBrush="{DynamicResource AccentBrush}"
-                        BorderThickness="2">
-                  <TextBlock Text="{Binding MicrosoftCode}"
-                             FontSize="28" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
-                             LetterSpacing="4"
-                             HorizontalAlignment="Center" />
-                </Border>
-                <TextBlock FontSize="11"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           HorizontalAlignment="Center">
-                  <Run Text="{Binding Localization[microsoft.visit]}" />
-                  <LineBreak />
-                  <Run Text="{Binding MicrosoftUrl}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
-                  <LineBreak />
-                  <Run Text="{Binding Localization[microsoft.entercode]}" />
-                </TextBlock>
-                <Button Command="{Binding CancelMicrosoftCommand}"
-                        Classes="ghost"
-                        HorizontalAlignment="Center"
-                        FontSize="12">
-                  <TextBlock Text="{Binding Localization[microsoft.cancel]}" />
-                </Button>
-              </StackPanel>
-            </Border>
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="{DynamicResource ErrorBrush}"
+                       FontSize="12"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" />
 
             <Button Command="{Binding MicrosoftLoginCommand}"
                     Classes="primary"
                     Height="44"
                     HorizontalAlignment="Stretch"
-                    IsVisible="{Binding ShowMicrosoftCode, Converter={StaticResource InverseBool}}"
                     IsEnabled="{Binding IsMicrosoftLoggingIn, Converter={StaticResource InverseBool}}">
               <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                 <TextBlock Text="{Binding Localization[microsoft.login]}" FontSize="15" VerticalAlignment="Center" />
@@ -183,6 +147,51 @@
                        Foreground="{DynamicResource TextMutedBrush}"
                        TextWrapping="Wrap"
                        HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Divider -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Width="200">
+          <Border VerticalAlignment="Center" Height="1"
+                  Background="{DynamicResource BorderBrush}" />
+          <TextBlock Grid.Column="1" Text="{Binding Localization[player.or]}"
+                     FontSize="13"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center"
+                     Margin="12,0" />
+          <Border Grid.Column="2" VerticalAlignment="Center" Height="1"
+                  Background="{DynamicResource BorderBrush}" />
+        </Grid>
+
+        <!-- Ely.by login card -->
+        <Border Classes="card" Padding="24" Width="360">
+          <StackPanel Spacing="14">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <TextBlock Text="{Binding Localization[player.elyby]}"
+                         FontSize="15" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding Localization[player.elybydesc]}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="{DynamicResource ErrorBrush}"
+                       FontSize="12"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" />
+
+            <Button Command="{Binding ElybyLoginCommand}"
+                    Classes="primary"
+                    Height="44"
+                    HorizontalAlignment="Stretch"
+                    IsEnabled="{Binding IsElybyLoggingIn, Converter={StaticResource InverseBool}}">
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding Localization[elyby.login]}" FontSize="15" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
           </StackPanel>
         </Border>
       </StackPanel>

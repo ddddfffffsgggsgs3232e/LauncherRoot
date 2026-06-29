@@ -2,7 +2,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LauncherRoot.Models;
@@ -16,6 +15,7 @@ public partial class PlayerSetupViewModel : ViewModelBase, IDisposable
     private readonly MainWindowViewModel _main;
     private readonly ILocalizationService _localization;
     private readonly MicrosoftAuthService _microsoftAuth;
+    private readonly ElybyAuthService _elybyAuth;
 
     [ObservableProperty]
     private string _username = "";
@@ -27,16 +27,7 @@ public partial class PlayerSetupViewModel : ViewModelBase, IDisposable
     private bool _isMicrosoftLoggingIn;
 
     [ObservableProperty]
-    private bool _showMicrosoftCode;
-
-    [ObservableProperty]
-    private string _microsoftCode = "";
-
-    [ObservableProperty]
-    private string _microsoftUrl = "";
-
-    [ObservableProperty]
-    private string _microsoftStatus = "";
+    private bool _isElybyLoggingIn;
 
     [ObservableProperty]
     private ObservableCollection<PlayerConfig> _accounts = [];
@@ -52,12 +43,14 @@ public partial class PlayerSetupViewModel : ViewModelBase, IDisposable
         _main = main;
         _localization = localization;
         _microsoftAuth = new MicrosoftAuthService(config);
+        _elybyAuth = new ElybyAuthService(config);
         _ = LoadAsync();
     }
 
     public void Dispose()
     {
         _microsoftAuth?.Dispose();
+        _elybyAuth?.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -109,31 +102,13 @@ public partial class PlayerSetupViewModel : ViewModelBase, IDisposable
     {
         IsMicrosoftLoggingIn = true;
         ErrorMessage = "";
-        ShowMicrosoftCode = false;
 
         var cfg = await _config.LoadConfigAsync();
         if (!string.IsNullOrWhiteSpace(cfg.MicrosoftClientId))
             _microsoftAuth.SetClientId(cfg.MicrosoftClientId);
 
-        var result = await _microsoftAuth.StartDeviceFlowAsync(
-            showCodeCallback: (code, url) =>
-            {
-                Dispatcher.UIThread.Post(() =>
-                {
-                    MicrosoftCode = code;
-                    MicrosoftUrl = url;
-                    ShowMicrosoftCode = true;
-                });
-                return Task.CompletedTask;
-            },
-            updateStatusCallback: (statusKey) =>
-            {
-                Dispatcher.UIThread.Post(() =>
-                {
-                    MicrosoftStatus = _localization[statusKey];
-                });
-                return Task.CompletedTask;
-            });
+        var result = await _microsoftAuth.LoginWithBrowserAsync(
+            _ => Task.CompletedTask);
 
         IsMicrosoftLoggingIn = false;
 
@@ -159,7 +134,6 @@ public partial class PlayerSetupViewModel : ViewModelBase, IDisposable
         }
         else
         {
-            ShowMicrosoftCode = false;
             ErrorMessage = result.ErrorMessage ?? _localization["error.microsoft_failed"];
         }
     }
@@ -173,10 +147,43 @@ public partial class PlayerSetupViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private void CancelMicrosoft()
+    private async Task ElybyLogin()
     {
-        ShowMicrosoftCode = false;
-        IsMicrosoftLoggingIn = false;
+        var cfg = await _config.LoadConfigAsync();
+        if (!string.IsNullOrWhiteSpace(cfg.ElybyClientId))
+            _elybyAuth.SetClientId(cfg.ElybyClientId);
+
+        IsElybyLoggingIn = true;
+        ErrorMessage = "";
+
+        var result = await _elybyAuth.LoginWithBrowserAsync();
+
+        IsElybyLoggingIn = false;
+
+        if (result.Success)
+        {
+            if (Accounts.Any(a => a.Username == result.Username))
+            {
+                ErrorMessage = $"{_localization["error.duplicate_user"]}: {result.Username}";
+                return;
+            }
+
+            var player = new PlayerConfig
+            {
+                Username = result.Username,
+                Uuid = result.Uuid,
+                AccessToken = result.AccessToken,
+                AuthType = result.AuthType
+            };
+            await _config.SavePlayerAsync(player);
+            Accounts.Add(player);
+            SelectedAccount = player;
+            _main.NavigateTo(PageType.MainMenu);
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage ?? _localization["error.elyby_failed"];
+        }
     }
 
     [RelayCommand]

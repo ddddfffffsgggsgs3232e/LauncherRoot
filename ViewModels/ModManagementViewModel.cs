@@ -391,9 +391,9 @@ public partial class ModManagementViewModel : ViewModelBase
             }
             else
             {
-                var info = await _modrinth.GetModInfoAsync(hit.Slug, _instance.Version, _instance.Loader);
+                var info = await _modrinth.GetModInfoAsync(hit.Slug, _instance.Version, _instance.Loader, CurrentProjectType);
                 downloadUrl = info?.DownloadUrl;
-                fileName = info?.FileName ?? $"{hit.Slug}.jar";
+                fileName = info?.FileName ?? $"{hit.Slug}{(SelectedTab == 0 ? ".jar" : ".zip")}";
             }
 
             if (downloadUrl == null) return;

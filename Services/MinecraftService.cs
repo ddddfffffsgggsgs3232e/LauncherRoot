@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Xml.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LauncherRoot.Models;
@@ -274,10 +276,15 @@ public class MinecraftService : IMinecraftService, IDisposable
             return false;
         }
 
+        var launcherProfiles = Path.Combine(minecraftDir, "launcher_profiles.json");
+        if (!File.Exists(launcherProfiles))
+            await File.WriteAllTextAsync(launcherProfiles,
+                "{\"profiles\":{},\"selectedProfile\":\"(Default)\",\"clientToken\":\"00000000-0000-0000-0000-000000000000\",\"launcherVersion\":{\"format\":21,\"name\":\"2.1.1234\"}}");
+
         var psi = new ProcessStartInfo
         {
             FileName = javaPath,
-            Arguments = $"-jar \"{installerPath}\" --installClient --minecraftPath \"{minecraftDir}\"",
+            Arguments = $"--add-modules ALL-MODULE-PATH -jar \"{installerPath}\" --installClient \"{minecraftDir}\"",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -298,8 +305,8 @@ public class MinecraftService : IMinecraftService, IDisposable
 
         if (proc.ExitCode != 0)
         {
-            LastError = string.IsNullOrWhiteSpace(error) ? "Forge kurulumu başarısız" : error[..Math.Min(error.Length, 500)];
-            _config.Log($"Forge kurulum hatası: {error}");
+            LastError = string.IsNullOrWhiteSpace(error) ? output[..Math.Min(output.Length, 500)] : error[..Math.Min(error.Length, 500)];
+            _config.Log($"Forge kurulum hatası: {LastError}");
             return false;
         }
 
@@ -360,7 +367,7 @@ public class MinecraftService : IMinecraftService, IDisposable
 
         instance.LoaderVersion = neoVersion;
 
-        var versionId = $"{version}-{neoVersion}";
+        var versionId = neoVersion;
         var versionJsonPath = Path.Combine(minecraftDir, "versions", versionId, $"{versionId}.json");
         if (File.Exists(versionJsonPath))
         {
@@ -372,8 +379,8 @@ public class MinecraftService : IMinecraftService, IDisposable
             return true;
         }
 
-        var installerJar = $"neoforge-{version}-{neoVersion}-installer.jar";
-        var installerUrl = $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{version}-{neoVersion}/{installerJar}";
+        var installerJar = $"neoforge-{neoVersion}-installer.jar";
+        var installerUrl = $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoVersion}/{installerJar}";
         var installerPath = Path.Combine(minecraftDir, installerJar);
 
         if (!File.Exists(installerPath))
@@ -381,7 +388,7 @@ public class MinecraftService : IMinecraftService, IDisposable
             var resp = await _http.GetAsync(installerUrl);
             if (!resp.IsSuccessStatusCode)
             {
-                LastError = $"NeoForge installer indirilemedi: {version}-{neoVersion}";
+                LastError = $"NeoForge installer indirilemedi: {neoVersion}";
                 _config.Log(LastError);
                 return false;
             }
@@ -398,10 +405,15 @@ public class MinecraftService : IMinecraftService, IDisposable
             return false;
         }
 
+        var launcherProfiles = Path.Combine(minecraftDir, "launcher_profiles.json");
+        if (!File.Exists(launcherProfiles))
+            await File.WriteAllTextAsync(launcherProfiles,
+                "{\"profiles\":{},\"selectedProfile\":\"(Default)\",\"clientToken\":\"00000000-0000-0000-0000-000000000000\",\"launcherVersion\":{\"format\":21,\"name\":\"2.1.1234\"}}");
+
         var psi = new ProcessStartInfo
         {
             FileName = javaPath,
-            Arguments = $"-jar \"{installerPath}\" --installClient --minecraftPath \"{minecraftDir}\"",
+            Arguments = $"--add-modules ALL-MODULE-PATH -jar \"{installerPath}\" --installClient \"{minecraftDir}\"",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -422,8 +434,8 @@ public class MinecraftService : IMinecraftService, IDisposable
 
         if (proc.ExitCode != 0)
         {
-            LastError = string.IsNullOrWhiteSpace(error) ? "NeoForge kurulumu başarısız" : error[..Math.Min(error.Length, 500)];
-            _config.Log($"NeoForge kurulum hatası: {error}");
+            LastError = string.IsNullOrWhiteSpace(error) ? output[..Math.Min(output.Length, 500)] : error[..Math.Min(error.Length, 500)];
+            _config.Log($"NeoForge kurulum hatası: {LastError}");
             return false;
         }
 
@@ -449,14 +461,26 @@ public class MinecraftService : IMinecraftService, IDisposable
     {
         try
         {
-            var metadata = await _http.GetFromJsonAsync<JsonElement>(
-                "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.json");
-            if (!metadata.TryGetProperty("versions", out var versions)) return null;
+            var xml = await _http.GetStringAsync(
+                "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml");
 
-            var matching = versions.EnumerateArray()
-                .Select(v => v.GetString() ?? "")
-                .Where(v => v.StartsWith(mcVersion + "-", StringComparison.Ordinal))
-                .Select(v => v[(mcVersion.Length + 1)..])
+            var doc = XDocument.Parse(xml);
+            var versions = doc.Root?.Element("versioning")?.Element("versions")?.Elements("version")
+                .Select(v => v.Value)
+                .ToList();
+
+            if (versions == null || versions.Count == 0) return null;
+
+            var parts = mcVersion.Split('.');
+            if (parts.Length < 2) return null;
+
+            var neoMajor = parts[1];
+            var neoMinor = parts.Length >= 3 ? parts[2] : null;
+
+            var prefix = neoMinor != null ? $"{neoMajor}.{neoMinor}." : $"{neoMajor}.";
+
+            var matching = versions
+                .Where(v => v.StartsWith(prefix, StringComparison.Ordinal))
                 .OrderBy(v => v, StringComparer.Ordinal)
                 .ToList();
 
@@ -783,9 +807,16 @@ public class MinecraftService : IMinecraftService, IDisposable
                 if (!File.Exists(clientJar))
                     clientJar = Path.Combine(minecraftDir, "versions", instance.Version, $"{instance.Version}.jar");
             }
-            else if ((instance.Loader == "forge" || instance.Loader == "neoforge") && !string.IsNullOrEmpty(instance.LoaderVersion))
+            else if (instance.Loader == "forge" && !string.IsNullOrEmpty(instance.LoaderVersion))
             {
                 var versionId = $"{instance.Version}-{instance.LoaderVersion}";
+                clientJar = Path.Combine(minecraftDir, "versions", versionId, $"{versionId}.jar");
+                if (!File.Exists(clientJar))
+                    clientJar = Path.Combine(minecraftDir, "versions", instance.Version, $"{instance.Version}.jar");
+            }
+            else if (instance.Loader == "neoforge" && !string.IsNullOrEmpty(instance.LoaderVersion))
+            {
+                var versionId = instance.LoaderVersion;
                 clientJar = Path.Combine(minecraftDir, "versions", versionId, $"{versionId}.jar");
                 if (!File.Exists(clientJar))
                     clientJar = Path.Combine(minecraftDir, "versions", instance.Version, $"{instance.Version}.jar");
@@ -838,15 +869,99 @@ public class MinecraftService : IMinecraftService, IDisposable
             var classpath = byArtifact.Values.Select(x => x.path).ToList();
             var cp = string.Join(Path.PathSeparator, classpath);
 
-            var (mainClass, extraArgs) = GetLaunchConfig(instance);
+            if (instance.Loader == "neoforge" && !string.IsNullOrEmpty(instance.LoaderVersion))
+            {
+                var joptBetter = Path.Combine(libDir, "net", "sf", "jopt-simple", "jopt-simple", "5.0.4", "jopt-simple-5.0.4.jar");
+                var joptBad = Path.Combine(libDir, "net", "sf", "jopt-simple", "jopt-simple", "6.0-alpha-3", "jopt-simple-6.0-alpha-3.jar");
+                if (File.Exists(joptBetter) && File.Exists(joptBad))
+                {
+                    var idx = classpath.FindIndex(p => p.EndsWith("jopt-simple-6.0-alpha-3.jar"));
+                    if (idx >= 0)
+                        classpath[idx] = joptBetter;
+                    cp = string.Join(Path.PathSeparator, classpath);
+                }
+            }
 
-            var versionData = await GetVersionDataAsync(instance.Version);
-            var assetIndex = versionData?.GetProperty("assetIndex").GetProperty("id").GetString() ?? instance.Version;
+            var (mainClass, extraArgs) = GetLaunchConfig(instance);
 
             var effectiveUuid = FormatUuid(string.IsNullOrEmpty(uuid) ? Guid.NewGuid().ToString("N") : uuid);
             var token = !string.IsNullOrEmpty(accessToken) ? accessToken : "0";
 
-            var args = $"{customJvmArgs} -Xmx{ramGB}G -Xms{Math.Max(1, ramGB / 2)}G -cp \"{cp}\" " +
+            var versionData = await GetVersionDataAsync(instance.Version);
+            var assetIndex = versionData?.GetProperty("assetIndex").GetProperty("id").GetString() ?? instance.Version;
+
+            string jvmArgs;
+            string args;
+
+            if (instance.Loader == "neoforge" && !string.IsNullOrEmpty(instance.LoaderVersion))
+            {
+                var neoVersionId = $"neoforge-{instance.LoaderVersion}";
+                var neoJsonPath = Path.Combine(minecraftDir, "versions", neoVersionId, $"{neoVersionId}.json");
+
+                if (File.Exists(neoJsonPath))
+                {
+                    var neoDoc = JsonDocument.Parse(await File.ReadAllTextAsync(neoJsonPath));
+                    var jvmArray = neoDoc.RootElement.GetProperty("arguments").GetProperty("jvm").EnumerateArray();
+                    var libraryDir = Path.Combine(minecraftDir, "libraries");
+                    var sep = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ";" : ":";
+                    var neoJvmParts = new List<string>();
+
+                    foreach (var entry in jvmArray)
+                    {
+                        var val = entry.GetString() ?? "";
+                        val = val.Replace("${library_directory}", libraryDir);
+                        val = val.Replace("${classpath_separator}", sep);
+                        val = val.Replace("${version_name}", neoVersionId);
+                        if (val.Contains(' '))
+                            val = $"\"{val}\"";
+                        neoJvmParts.Add(val);
+                    }
+
+                    neoJvmParts.Insert(0, "-Dbsl.debug");
+                    neoJvmParts.Add($"-DlegacyClassPath={cp}");
+                    neoJvmParts.AddRange(customJvmArgs.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+                    jvmArgs = string.Join(" ", neoJvmParts);
+
+                    var neoGameArgs = string.Join(" ",
+                        neoDoc.RootElement.GetProperty("arguments").GetProperty("game").EnumerateArray()
+                            .Select(e => e.GetString() ?? ""));
+
+                    args = $"{jvmArgs} -Xmx{ramGB}G -Xms{Math.Max(1, ramGB / 2)}G " +
+                           $"{mainClass} " +
+                           $"--gameDir \"{gameDir}\" " +
+                           $"--assetsDir \"{assetsDir}\" " +
+                           $"--assetIndex \"{assetIndex}\" " +
+                           $"--username \"{username}\" " +
+                           $"--uuid \"{effectiveUuid}\" " +
+                           $"--accessToken \"{token}\" " +
+                           $"--version \"{instance.Version}\" " +
+                           $"--width {launcherConfig.WindowWidth} --height {launcherConfig.WindowHeight} " +
+                           $"{neoGameArgs}";
+                }
+                else
+                {
+                    var addOpens = "--add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.text=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.security.ssl=ALL-UNNAMED --add-opens java.base/sun.security.util=ALL-UNNAMED ";
+                    jvmArgs = $"{addOpens}{customJvmArgs}";
+                    args = $"{jvmArgs} -Xmx{ramGB}G -Xms{Math.Max(1, ramGB / 2)}G -cp \"{cp}\" " +
+                           $"{mainClass} " +
+                           $"--gameDir \"{gameDir}\" " +
+                           $"--assetsDir \"{assetsDir}\" " +
+                           $"--assetIndex \"{assetIndex}\" " +
+                           $"--username \"{username}\" " +
+                           $"--uuid \"{effectiveUuid}\" " +
+                           $"--accessToken \"{token}\" " +
+                           $"--version \"{instance.Version}\" " +
+                           $"--width {launcherConfig.WindowWidth} --height {launcherConfig.WindowHeight} " +
+                           $"{extraArgs}";
+                }
+            }
+            else
+            {
+                var addOpens = instance.Loader is "forge" or "neoforge"
+                    ? "--add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.text=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.security.ssl=ALL-UNNAMED --add-opens java.base/sun.security.util=ALL-UNNAMED "
+                    : "";
+                jvmArgs = $"{addOpens}{customJvmArgs}";
+                args = $"{jvmArgs} -Xmx{ramGB}G -Xms{Math.Max(1, ramGB / 2)}G -cp \"{cp}\" " +
                        $"{mainClass} " +
                        $"--gameDir \"{gameDir}\" " +
                        $"--assetsDir \"{assetsDir}\" " +
@@ -857,6 +972,7 @@ public class MinecraftService : IMinecraftService, IDisposable
                        $"--version \"{instance.Version}\" " +
                        $"--width {launcherConfig.WindowWidth} --height {launcherConfig.WindowHeight} " +
                        $"{extraArgs}";
+            }
 
             _config.Log($"Başlatılıyor: {javaPath} {args}");
 

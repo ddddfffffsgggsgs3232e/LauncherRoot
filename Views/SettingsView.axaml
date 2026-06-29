@@ -48,7 +48,7 @@
 
       <Grid HorizontalAlignment="Center" Width="820"
             ColumnDefinitions="400,20,400"
-            RowDefinitions="Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto">
+            RowDefinitions="Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto,20,Auto">
         <TextBlock Grid.ColumnSpan="3"
                    Text="{Binding Localization[settings.title]}"
                    Classes="h1"
@@ -256,28 +256,8 @@
           </StackPanel>
         </Border>
 
-        <!-- ── Row 7: Microsoft Client ID (full width) ── -->
+        <!-- ── Row 7: Updates (full width) ── -->
         <Border Grid.Row="14" Grid.ColumnSpan="3" Classes="card" Padding="20">
-          <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="☁︎" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Localization[settings.microsoft_clientid]}"
-                         FontSize="16" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </StackPanel>
-            <TextBox Text="{Binding MicrosoftClientId}"
-                     Watermark="{Binding Localization[settings.microsoft_clientid.placeholder]}"
-                     Height="40" FontSize="13"
-                     FontFamily="Consolas, monospace" />
-            <TextBlock Text="{Binding Localization[settings.microsoft_clientid.hint]}"
-                       FontSize="11"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-
-        <!-- ── Row 8: Updates (full width) ── -->
-        <Border Grid.Row="16" Grid.ColumnSpan="3" Classes="card" Padding="20">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="🔄︎" FontSize="18" VerticalAlignment="Center" />
@@ -310,8 +290,8 @@
           </StackPanel>
         </Border>
 
-        <!-- ── Row 9: Desktop Shortcut ── -->
-        <Border Grid.Row="18" Grid.ColumnSpan="3" Classes="card" Padding="20">
+        <!-- ── Row 8: Desktop Shortcut ── -->
+        <Border Grid.Row="16" Grid.ColumnSpan="3" Classes="card" Padding="20">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="🖥︎" FontSize="18" VerticalAlignment="Center" />
@@ -328,26 +308,6 @@
                 <TextBlock Text="{Binding Localization[settings.installdesktop]}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
-          </StackPanel>
-        </Border>
-
-        <!-- ── Row 10: CurseForge API Key ── -->
-        <Border Grid.Row="20" Grid.ColumnSpan="3" Classes="card" Padding="20">
-          <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="🔑" FontSize="18" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Localization[settings.curseforge]}"
-                         FontSize="16" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </StackPanel>
-            <TextBox Text="{Binding CurseForgeApiKey}"
-                     Watermark="{Binding Localization[settings.curseforge.placeholder]}"
-                     Height="40" FontSize="13"
-                     FontFamily="Consolas, monospace" />
-            <TextBlock Text="{Binding Localization[settings.curseforge.hint]}"
-                       FontSize="11"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       TextWrapping="Wrap" />
           </StackPanel>
         </Border>
       </Grid>

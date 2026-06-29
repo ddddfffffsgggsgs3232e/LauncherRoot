@@ -122,7 +122,7 @@ public class ModrinthService : IModrinthService
         }
     }
 
-    public async Task<ModInfo?> GetModInfoAsync(string slug, string gameVersion, string loader)
+    public async Task<ModInfo?> GetModInfoAsync(string slug, string gameVersion, string loader, string projectType = "mod")
     {
         try
         {
@@ -130,7 +130,7 @@ public class ModrinthService : IModrinthService
             if (project == null) return null;
 
             var versions = await _http.GetFromJsonAsync<List<ModrinthVersion>>($"{BaseUrl}/project/{slug}/version");
-            var best = PickBestVersion(versions, gameVersion, loader);
+            var best = PickBestVersion(versions, gameVersion, loader, projectType);
             var primaryFile = best?.Files.FirstOrDefault(f => f.Primary) ?? best?.Files.FirstOrDefault();
 
             return new ModInfo
@@ -152,14 +152,24 @@ public class ModrinthService : IModrinthService
         }
     }
 
-    private static ModrinthVersion? PickBestVersion(List<ModrinthVersion>? versions, string gameVersion, string loader)
+    private static ModrinthVersion? PickBestVersion(List<ModrinthVersion>? versions, string gameVersion, string loader, string projectType = "mod")
     {
         if (versions == null || versions.Count == 0) return null;
+
+        if (projectType != "mod")
+        {
+            return versions
+                .Where(v => v.GameVersions.Contains(gameVersion))
+                .OrderByDescending(v => v.DatePublished)
+                .FirstOrDefault();
+        }
 
         var loaderName = loader switch
         {
             "forge" => "forge",
+            "neoforge" => "neoforge",
             "fabric" => "fabric",
+            "quilt" => "quilt",
             _ => "fabric",
         };
 
